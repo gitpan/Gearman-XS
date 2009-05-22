@@ -1,0 +1,20 @@
+Changes
+Makefile.PL
+MANIFEST
+README
+XS.xs
+t/Gearman-XS.t
+t/test_worker.pl
+examples/echo_client.pl
+examples/echo_worker.pl
+examples/reverse_worker.pl
+examples/reverse_client.pl
+examples/reverse_client_bg.pl
+examples/reverse_client_cb.pl
+lib/Gearman/XS.pm
+lib/Gearman/XS/Client.pm
+lib/Gearman/XS/Worker.pm
+lib/Gearman/XS/Job.pm
+lib/Gearman/XS/Task.pm
+typemap
+META.yml                                 Module meta-data (added by MakeMaker)

@@ -1,0 +1,17 @@
+# Gearman Perl front end
+# Copyright (C) 2009 Dennis Schoen
+# All rights reserved.
+# 
+# This library is free software; you can redistribute it and/or modify
+# it under the same terms as Perl itself, either Perl version 5.8.9 or,
+# at your option, any later version of Perl 5 you may have available.
+
+TYPEMAP
+GearmanClient *	T_PTROBJ
+GearmanWorker *	T_PTROBJ
+GearmanJob *	T_PTROBJ
+GearmanTask *	T_PTROBJ
+gearman_return_t	T_ENUM
+gearman_worker_options_t	T_ENUM
+in_port_t	T_IV
+uint32_t	T_IV
