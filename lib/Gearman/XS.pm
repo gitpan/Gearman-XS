@@ -14,7 +14,7 @@ use Exporter;
 
 our @ISA = qw(Exporter);
 
-our $VERSION = '0.01';
+our $VERSION = '0.2';
 XSLoader::load(__PACKAGE__, $VERSION);
 
 my @constants = qw/

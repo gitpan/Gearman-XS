@@ -8,6 +8,8 @@
 
 package Gearman::XS::Task;
 
+our $VERSION = '0.1';
+
 use Gearman::XS;
 
 =head1 NAME
@@ -44,6 +46,10 @@ Get the numerator of percentage complete for a task.
 =head2 $task->denominator()
 
 Get the denominator of percentage complete for a task.
+
+=head2 $task->uuid()
+
+Get unique identifier for a task.
 
 =head1 BUGS
 

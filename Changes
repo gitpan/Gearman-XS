@@ -1,2 +1,13 @@
-0.01  Sat May  2 18:10:00 2009
-	- original version; created by h2xs 1.23
+0.2 - 2009-06-02
+ * Requires libgearman 0.7
+ * Fix bugs #379586 #380279
+ * Fix memory leak in result handling.
+ * replace malloc/free/strdup with perl safe* equivalents
+ * Fix binary workload and integer/long return values.
+ * Add job fail() function.
+ * Add client/worker add_servers() function.
+ * Add version information to all .pm files.
+ * Add note about callback return values.
+
+0.1 - 2009-05-22
+ * First release.

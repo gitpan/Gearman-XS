@@ -13,17 +13,23 @@
 
 #include <libgearman/gearman.h>
 
+typedef enum {
+	TASK_FN_ARG_CREATED = (1 << 0)
+} gearman_task_fn_arg_st_flags;
+
 typedef struct gearman_client_st GearmanClient;
 typedef struct gearman_worker_st GearmanWorker;
 typedef struct gearman_job_st GearmanJob;
 typedef struct gearman_task_st GearmanTask;
 
+/* worker cb_arg to pass our actual perl function */
 typedef struct
 {
 	SV * func;
-	void *cb_arg;
+	const char *cb_arg;
 } gearman_worker_cb;
 
+/* client perl callback functions, stored in client->data */
 typedef struct
 {
 	SV * created_fn;
@@ -33,12 +39,40 @@ typedef struct
 	SV * status_fn;
 } gearman_client_task_cb;
 
-void *_perl_worker_function_callback(GearmanJob *job, void *cb_arg,
+/* client task fn_arg */
+typedef struct
+{
+	gearman_task_fn_arg_st_flags flags;
+	gearman_client_st *client;
+	const char *workload;
+} gearman_task_fn_arg_st;
+
+void _perl_free(void *ptr, void *arg) {
+	Safefree(ptr);
+}
+
+static void *_perl_malloc(size_t size, void *arg) {
+	return safemalloc(size);
+}
+
+/* fn_arg free function to free() the workload */
+void _perl_task_free(gearman_task_st *task, void *fn_arg) {
+	gearman_task_fn_arg_st *fn_arg_st= (gearman_task_fn_arg_st *)fn_arg;
+	if (fn_arg_st->flags == TASK_FN_ARG_CREATED) {
+		Safefree(fn_arg_st->workload);
+		Safefree(fn_arg_st);
+	}
+}
+
+/* wrapper function to call our actual perl function,
+   passed in through cb_arg */
+void *_perl_worker_function_callback(gearman_job_st *job, void *cb_arg,
 								size_t *result_size, gearman_return_t *ret_ptr)
 {
 	gearman_worker_cb *worker_cb;
 	int count;
 	char *result;
+	SV * result_sv;
 	SV * job_sv;
 
 	worker_cb= (gearman_worker_cb *)cb_arg;
@@ -50,7 +84,7 @@ void *_perl_worker_function_callback(GearmanJob *job, void *cb_arg,
 
 	PUSHMARK(SP);
 	job_sv= sv_newmortal();
-	sv_setref_pv(job_sv, "GearmanJobPtr", (void *)job);
+	sv_setref_pv(job_sv, "GearmanJobPtr", job);
 	XPUSHs(job_sv);
 	if (worker_cb->cb_arg != NULL) {
 		XPUSHs(sv_2mortal(newSVpv(worker_cb->cb_arg, strlen(worker_cb->cb_arg))));
@@ -73,8 +107,9 @@ void *_perl_worker_function_callback(GearmanJob *job, void *cb_arg,
 		if (count != 1)
 			croak("Invalid number of return values.\n");
 
-		result= strdup(POPp);
-		*result_size= strlen(result);
+		result_sv= POPs;
+		result=savesvpv(result_sv);
+		*result_size= SvCUR(result_sv);
 
 		*ret_ptr= GEARMAN_SUCCESS;
 	}
@@ -88,14 +123,14 @@ void *_perl_worker_function_callback(GearmanJob *job, void *cb_arg,
 
 static gearman_return_t _perl_task_complete_fn(gearman_task_st *task)
 {
-	GearmanClient *gc;
+	gearman_task_fn_arg_st *fn_arg_st;
 	gearman_client_task_cb *task_cb;
 	SV * task_sv;
 	int count;
 	gearman_return_t ret;
 
-	gc= (GearmanClient *)gearman_task_fn_arg(task);
-	task_cb= (gearman_client_task_cb *)gearman_client_data(gc);
+	fn_arg_st= (gearman_task_fn_arg_st *)gearman_task_fn_arg(task);
+	task_cb= (gearman_client_task_cb *)gearman_client_data(fn_arg_st->client);
 
 	dSP;
 
@@ -104,7 +139,7 @@ static gearman_return_t _perl_task_complete_fn(gearman_task_st *task)
 
 	PUSHMARK(SP);
 	task_sv= sv_newmortal();
-	sv_setref_pv(task_sv, "GearmanTaskPtr", (void *)task);
+	sv_setref_pv(task_sv, "GearmanTaskPtr", task);
 	XPUSHs(task_sv);
 	PUTBACK;
 
@@ -125,14 +160,14 @@ static gearman_return_t _perl_task_complete_fn(gearman_task_st *task)
 
 static gearman_return_t _perl_task_fail_fn(gearman_task_st *task)
 {
-	GearmanClient *gc;
+	gearman_task_fn_arg_st *fn_arg_st;
 	gearman_client_task_cb *task_cb;
 	SV * task_sv;
 	int count;
 	gearman_return_t ret;
 
-	gc= (GearmanClient *)gearman_task_fn_arg(task);
-	task_cb= (gearman_client_task_cb *)gearman_client_data(gc);
+	fn_arg_st= (gearman_task_fn_arg_st *)gearman_task_fn_arg(task);
+	task_cb= (gearman_client_task_cb *)gearman_client_data(fn_arg_st->client);
 
 	dSP;
 
@@ -141,7 +176,7 @@ static gearman_return_t _perl_task_fail_fn(gearman_task_st *task)
 
 	PUSHMARK(SP);
 	task_sv= sv_newmortal();
-	sv_setref_pv(task_sv, "GearmanTaskPtr", (void *)task);
+	sv_setref_pv(task_sv, "GearmanTaskPtr", task);
 	XPUSHs(task_sv);
 	PUTBACK;
 
@@ -162,14 +197,14 @@ static gearman_return_t _perl_task_fail_fn(gearman_task_st *task)
 
 static gearman_return_t _perl_task_status_fn(gearman_task_st *task)
 {
-	GearmanClient *gc;
+	gearman_task_fn_arg_st *fn_arg_st;
 	gearman_client_task_cb *task_cb;
 	SV * task_sv;
 	int count;
 	gearman_return_t ret;
 
-	gc= (GearmanClient *)gearman_task_fn_arg(task);
-	task_cb= (gearman_client_task_cb *)gearman_client_data(gc);
+	fn_arg_st= (gearman_task_fn_arg_st *)gearman_task_fn_arg(task);
+	task_cb= (gearman_client_task_cb *)gearman_client_data(fn_arg_st->client);
 
 	dSP;
 
@@ -178,7 +213,7 @@ static gearman_return_t _perl_task_status_fn(gearman_task_st *task)
 
 	PUSHMARK(SP);
 	task_sv= sv_newmortal();
-	sv_setref_pv(task_sv, "GearmanTaskPtr", (void *)task);
+	sv_setref_pv(task_sv, "GearmanTaskPtr", task);
 	XPUSHs(task_sv);
 	PUTBACK;
 
@@ -199,14 +234,14 @@ static gearman_return_t _perl_task_status_fn(gearman_task_st *task)
 
 static gearman_return_t _perl_task_created_fn(gearman_task_st *task)
 {
-	GearmanClient *gc;
+	gearman_task_fn_arg_st *fn_arg_st;
 	gearman_client_task_cb *task_cb;
 	SV * task_sv;
 	int count;
 	gearman_return_t ret;
 
-	gc= (GearmanClient *)gearman_task_fn_arg(task);
-	task_cb= (gearman_client_task_cb *)gearman_client_data(gc);
+	fn_arg_st= (gearman_task_fn_arg_st *)gearman_task_fn_arg(task);
+	task_cb= (gearman_client_task_cb *)gearman_client_data(fn_arg_st->client);
 
 	dSP;
 
@@ -215,7 +250,7 @@ static gearman_return_t _perl_task_created_fn(gearman_task_st *task)
 
 	PUSHMARK(SP);
 	task_sv= sv_newmortal();
-	sv_setref_pv(task_sv, "GearmanTaskPtr", (void *)task);
+	sv_setref_pv(task_sv, "GearmanTaskPtr", task);
 	XPUSHs(task_sv);
 	PUTBACK;
 
@@ -236,14 +271,14 @@ static gearman_return_t _perl_task_created_fn(gearman_task_st *task)
 
 static gearman_return_t _perl_task_data_fn(gearman_task_st *task)
 {
-	GearmanClient *gc;
+	gearman_task_fn_arg_st *fn_arg_st;
 	gearman_client_task_cb *task_cb;
 	SV * task_sv;
 	int count;
 	gearman_return_t ret;
 
-	gc= (GearmanClient *)gearman_task_fn_arg(task);
-	task_cb= (gearman_client_task_cb *)gearman_client_data(gc);
+	fn_arg_st= (gearman_task_fn_arg_st *)gearman_task_fn_arg(task);
+	task_cb= (gearman_client_task_cb *)gearman_client_data(fn_arg_st->client);
 
 	dSP;
 
@@ -252,7 +287,7 @@ static gearman_return_t _perl_task_data_fn(gearman_task_st *task)
 
 	PUSHMARK(SP);
 	task_sv= sv_newmortal();
-	sv_setref_pv(task_sv, "GearmanTaskPtr", (void *)task);
+	sv_setref_pv(task_sv, "GearmanTaskPtr", task);
 	XPUSHs(task_sv);
 	PUTBACK;
 
@@ -343,17 +378,21 @@ MODULE = Gearman::XS		PACKAGE = Gearman::XS::Client
 GearmanClient *
 GearmanClient::new()
 	CODE:
-		GearmanClient *gc;
+		gearman_client_st *gc;
 		gearman_client_task_cb *task_cb;
 
-		gc= (GearmanClient *)gearman_client_create(NULL);
-		task_cb= malloc(sizeof(gearman_client_task_cb));
+		gc= gearman_client_create(NULL);
+		task_cb= safemalloc(sizeof(gearman_client_task_cb));
 		if (task_cb == NULL)
 			croak("Memory allocation error.\n");
 
 		memset(task_cb, 0, sizeof(gearman_client_task_cb));
 		gearman_client_set_data(gc, task_cb);
-		RETVAL= gc;
+		gearman_client_set_options(gc, GEARMAN_CLIENT_FREE_TASKS, 1);
+		gearman_client_set_workload_malloc(gc, _perl_malloc, NULL);
+		gearman_client_set_workload_free(gc, _perl_free, NULL);
+		gearman_client_set_task_fn_arg_free(gc, _perl_task_free);
+		RETVAL= (GearmanClient *)gc;
 	OUTPUT:
 		RETVAL
 
@@ -378,11 +417,20 @@ xsgc_add_server(gc, ...)
 		RETVAL
 
 gearman_return_t
+xsgc_add_servers(gc, servers)
+		GearmanClient *gc
+		const char *servers
+	CODE:
+		RETVAL= gearman_client_add_servers(gc, servers);
+	OUTPUT:
+		RETVAL
+
+gearman_return_t
 xsgc_echo(gc, workload)
 		GearmanClient *gc
-		const char *workload
+		SV * workload
 	CODE:
-		RETVAL= gearman_client_echo(gc, &workload, (size_t)strlen(workload));
+		RETVAL= gearman_client_echo(gc, SvPV_nolen(workload), SvCUR(workload));
 	OUTPUT:
 		RETVAL
 
@@ -390,26 +438,30 @@ void
 xsgc_do(gc, function_name, workload, ...)
 		GearmanClient *gc
 		const char *function_name
-		const char *workload
+		SV * workload
 	PREINIT:
 		const char *unique= NULL;
         gearman_return_t ret;
-		char *result;
+		void *result;
 		size_t result_size;
 	PPCODE:
 		if (items > 3)
 			unique= (char *)SvPV(ST(3), PL_na);
-		result= (char *)gearman_client_do(gc, function_name, unique,
-										workload, (size_t)strlen(workload),
+		result= gearman_client_do(gc, function_name, unique,
+										SvPV_nolen(workload), SvCUR(workload),
 										&result_size, &ret);
 		XPUSHs(sv_2mortal(newSViv(ret)));
-		XPUSHs(sv_2mortal(newSVpv(result, result_size)));
+		if ((ret == GEARMAN_WORK_DATA) || (ret == GEARMAN_SUCCESS))
+		{
+			XPUSHs(sv_2mortal(newSVpvn(result, result_size)));
+			Safefree(result);
+		}
 
 void
 xsgc_do_high(gc, function_name, workload, ...)
 		GearmanClient *gc
 		const char *function_name
-		const char *workload
+		SV * workload
 	PREINIT:
 		const char *unique= NULL;
         gearman_return_t ret;
@@ -419,16 +471,20 @@ xsgc_do_high(gc, function_name, workload, ...)
 		if (items > 3)
 			unique= (char *)SvPV(ST(3), PL_na);
 		result= (char *)gearman_client_do_high(gc, function_name, unique,
-										workload, (size_t)strlen(workload),
+										SvPV_nolen(workload), SvCUR(workload),
 										&result_size, &ret);
 		XPUSHs(sv_2mortal(newSViv(ret)));
-		XPUSHs(sv_2mortal(newSVpv(result, result_size)));
+		if ((ret == GEARMAN_WORK_DATA) || (ret == GEARMAN_SUCCESS))
+		{
+			XPUSHs(sv_2mortal(newSVpvn(result, result_size)));
+			Safefree(result);
+		}
 
 void
 xsgc_do_low(gc, function_name, workload, ...)
 		GearmanClient *gc
 		const char *function_name
-		const char *workload
+		SV * workload
 	PREINIT:
 		const char *unique= NULL;
         gearman_return_t ret;
@@ -438,16 +494,20 @@ xsgc_do_low(gc, function_name, workload, ...)
 		if (items > 3)
 			unique= (char *)SvPV(ST(3), PL_na);
 		result= (char *)gearman_client_do_low(gc, function_name, unique,
-										workload, (size_t)strlen(workload),
+										SvPV_nolen(workload), SvCUR(workload),
 										&result_size, &ret);
 		XPUSHs(sv_2mortal(newSViv(ret)));
-		XPUSHs(sv_2mortal(newSVpv(result, result_size)));
+		if ((ret == GEARMAN_WORK_DATA) || (ret == GEARMAN_SUCCESS))
+		{
+			XPUSHs(sv_2mortal(newSVpvn(result, result_size)));
+			Safefree(result);
+		}
 
 void
 xsgc_do_background(gc, function_name, workload, ...)
 		GearmanClient *gc
 		const char *function_name
-		const char *workload
+		SV * workload
 	PREINIT:
 		char job_handle[GEARMAN_JOB_HANDLE_SIZE];
 		const char *unique= NULL;
@@ -456,16 +516,23 @@ xsgc_do_background(gc, function_name, workload, ...)
 		if (items > 3)
 			unique= (char *)SvPV(ST(3), PL_na);
 		ret= gearman_client_do_background(gc, function_name, unique,
-										workload, (size_t)strlen(workload),
+										SvPV_nolen(workload), SvCUR(workload),
 										job_handle);
 		XPUSHs(sv_2mortal(newSViv(ret)));
-		XPUSHs(sv_2mortal(newSVpv(job_handle, (size_t)strlen(job_handle))));
+		if (ret != GEARMAN_SUCCESS)
+		{
+			Safefree(job_handle);
+		}
+		else
+		{
+			XPUSHs(sv_2mortal(newSVpvn(job_handle, strlen(job_handle))));
+		}
 
 void
 xsgc_do_high_background(gc, function_name, workload, ...)
 		GearmanClient *gc
 		const char *function_name
-		const char *workload
+		SV * workload
 	PREINIT:
 		char job_handle[GEARMAN_JOB_HANDLE_SIZE];
 		const char *unique= NULL;
@@ -474,16 +541,23 @@ xsgc_do_high_background(gc, function_name, workload, ...)
 		if (items > 3)
 			unique= (char *)SvPV(ST(3), PL_na);
 		ret= gearman_client_do_high_background(gc, function_name, unique,
-										workload, (size_t)strlen(workload),
+										SvPV_nolen(workload), SvCUR(workload),
 										job_handle);
 		XPUSHs(sv_2mortal(newSViv(ret)));
-		XPUSHs(sv_2mortal(newSVpv(job_handle, (size_t)strlen(job_handle))));
+		if (ret != GEARMAN_SUCCESS)
+		{
+			Safefree(job_handle);
+		}
+		else
+		{
+			XPUSHs(sv_2mortal(newSVpvn(job_handle, (size_t)strlen(job_handle))));
+		}
 
 void
 xsgc_do_low_background(gc, function_name, workload, ...)
 		GearmanClient *gc
 		const char *function_name
-		const char *workload
+		SV * workload
 	PREINIT:
 		char job_handle[GEARMAN_JOB_HANDLE_SIZE];
 		const char *unique= NULL;
@@ -492,26 +566,43 @@ xsgc_do_low_background(gc, function_name, workload, ...)
 		if (items > 3)
 			unique= (char *)SvPV(ST(3), PL_na);
 		ret= gearman_client_do_low_background(gc, function_name, unique,
-										workload, (size_t)strlen(workload),
+										SvPV_nolen(workload), SvCUR(workload),
 										job_handle);
 		XPUSHs(sv_2mortal(newSViv(ret)));
-		XPUSHs(sv_2mortal(newSVpv(job_handle, (size_t)strlen(job_handle))));
+		if (ret != GEARMAN_SUCCESS)
+		{
+			Safefree(job_handle);
+		}
+		else
+		{
+			XPUSHs(sv_2mortal(newSVpvn(job_handle, strlen(job_handle))));
+		}
 
 void
 xsgc_add_task(gc, function_name, workload, ...)
 		GearmanClient *gc
 		const char *function_name
-		const char *workload
+		SV * workload
 	PREINIT:
-		GearmanTask *task;
+		gearman_task_st *task;
 		const char *unique= NULL;
 		gearman_return_t ret;
+		gearman_task_fn_arg_st *fn_arg;
+		const char *w;
 	PPCODE:
 		if (items > 3)
 			unique= (char *)SvPV(ST(3), PL_na);
-		task= gearman_client_add_task(gc, NULL, gc, function_name, unique,
-										workload, (size_t)strlen(workload),
-										&ret);
+		w= savesvpv(workload);
+		fn_arg= safemalloc(sizeof(gearman_task_fn_arg_st));
+		if (fn_arg == NULL)
+			croak("Memory allocation error.\n");
+
+		memset(fn_arg, 0, sizeof(gearman_task_fn_arg_st));
+		fn_arg->flags= TASK_FN_ARG_CREATED;
+		fn_arg->client= gc;
+		fn_arg->workload= w;
+		task= gearman_client_add_task(gc, NULL, fn_arg, function_name, unique,
+												w,  SvCUR(workload), &ret);
 
 		SV * task_sv= sv_newmortal();
 		sv_setref_pv(task_sv, "GearmanTaskPtr", task);
@@ -523,17 +614,27 @@ void
 xsgc_add_task_high(gc, function_name, workload, ...)
 		GearmanClient *gc
 		const char *function_name
-		const char *workload
+		SV * workload
 	PREINIT:
-		GearmanTask *task;
+		gearman_task_st *task;
 		const char *unique= NULL;
 		gearman_return_t ret;
+		gearman_task_fn_arg_st *fn_arg;
+		const char *w;
 	PPCODE:
 		if (items > 3)
 			unique= (char *)SvPV(ST(3), PL_na);
-		task= gearman_client_add_task_high(gc, NULL, gc, function_name, unique,
-										workload, (size_t)strlen(workload),
-										&ret);
+		w= savesvpv(workload);
+		fn_arg= safemalloc(sizeof(gearman_task_fn_arg_st));
+		if (fn_arg == NULL)
+			croak("Memory allocation error.\n");
+
+		memset(fn_arg, 0, sizeof(gearman_task_fn_arg_st));
+		fn_arg->flags= TASK_FN_ARG_CREATED;
+		fn_arg->client= gc;
+		fn_arg->workload= w;
+		task= gearman_client_add_task_high(gc, NULL, fn_arg, function_name,
+										unique, w, SvCUR(workload), &ret);
 
 		SV * task_sv= sv_newmortal();
 		sv_setref_pv(task_sv, "GearmanTaskPtr", task);
@@ -545,17 +646,27 @@ void
 xsgc_add_task_low(gc, function_name, workload, ...)
 		GearmanClient *gc
 		const char *function_name
-		const char *workload
+		SV * workload
 	PREINIT:
-		GearmanTask *task;
+		gearman_task_st *task;
 		const char *unique= NULL;
 		gearman_return_t ret;
+		gearman_task_fn_arg_st *fn_arg;
+		const char *w;
 	PPCODE:
 		if (items > 3)
 			unique= (char *)SvPV(ST(3), PL_na);
-		task= gearman_client_add_task_low(gc, NULL, gc, function_name, unique,
-										workload, (size_t)strlen(workload),
-										&ret);
+		w= savesvpv(workload);
+		fn_arg= safemalloc(sizeof(gearman_task_fn_arg_st));
+		if (fn_arg == NULL)
+			croak("Memory allocation error.\n");
+
+		memset(fn_arg, 0, sizeof(gearman_task_fn_arg_st));
+		fn_arg->flags= TASK_FN_ARG_CREATED;
+		fn_arg->client= gc;
+		fn_arg->workload= w;
+		task= gearman_client_add_task_low(gc, NULL, fn_arg, function_name,
+										unique, w, SvCUR(workload), &ret);
 
 		SV * task_sv= sv_newmortal();
 		sv_setref_pv(task_sv, "GearmanTaskPtr", task);
@@ -567,17 +678,27 @@ void
 xsgc_add_task_background(gc, function_name, workload, ...)
 		GearmanClient *gc
 		const char *function_name
-		const char *workload
+		SV * workload
 	PREINIT:
-		GearmanTask *task;
+		gearman_task_st *task;
 		const char *unique= NULL;
 		gearman_return_t ret;
+		gearman_task_fn_arg_st *fn_arg;
+		const char *w;
 	PPCODE:
 		if (items > 3)
 			unique= (char *)SvPV(ST(3), PL_na);
-		task= gearman_client_add_task_background(gc, NULL, gc, function_name,
-									unique, workload, (size_t)strlen(workload),
-									&ret);
+		w= savesvpv(workload);
+		fn_arg= safemalloc(sizeof(gearman_task_fn_arg_st));
+		if (fn_arg == NULL)
+			croak("Memory allocation error.\n");
+
+		memset(fn_arg, 0, sizeof(gearman_task_fn_arg_st));
+		fn_arg->flags= TASK_FN_ARG_CREATED;
+		fn_arg->client= gc;
+		fn_arg->workload= w;
+		task= gearman_client_add_task_background(gc, NULL, fn_arg, function_name,
+										unique, w, SvCUR(workload), &ret);
 
 		SV * task_sv= sv_newmortal();
 		sv_setref_pv(task_sv, "GearmanTaskPtr", task);
@@ -589,17 +710,27 @@ void
 xsgc_add_task_high_background(gc, function_name, workload, ...)
 		GearmanClient *gc
 		const char *function_name
-		const char *workload
+		SV * workload
 	PREINIT:
-		GearmanTask *task;
+		gearman_task_st *task;
 		const char *unique= NULL;
 		gearman_return_t ret;
+		gearman_task_fn_arg_st *fn_arg;
+		const char *w;
 	PPCODE:
 		if (items > 3)
 			unique= (char *)SvPV(ST(3), PL_na);
-		task= gearman_client_add_task_high_background(gc, NULL, gc, function_name,
-									unique, workload, (size_t)strlen(workload),
-									&ret);
+		w= savesvpv(workload);
+		fn_arg= safemalloc(sizeof(gearman_task_fn_arg_st));
+		if (fn_arg == NULL)
+			croak("Memory allocation error.\n");
+
+		memset(fn_arg, 0, sizeof(gearman_task_fn_arg_st));
+		fn_arg->flags= TASK_FN_ARG_CREATED;
+		fn_arg->client= gc;
+		fn_arg->workload= w;
+		task= gearman_client_add_task_high_background(gc, NULL, fn_arg, function_name,
+										unique, w, SvCUR(workload), &ret);
 
 		SV * task_sv= sv_newmortal();
 		sv_setref_pv(task_sv, "GearmanTaskPtr", task);
@@ -611,17 +742,27 @@ void
 xsgc_add_task_low_background(gc, function_name, workload, ...)
 		GearmanClient *gc
 		const char *function_name
-		const char *workload
+		SV * workload
 	PREINIT:
-		GearmanTask *task;
+		gearman_task_st *task;
 		const char *unique= NULL;
 		gearman_return_t ret;
+		gearman_task_fn_arg_st *fn_arg;
+		const char *w;
 	PPCODE:
 		if (items > 3)
 			unique= (char *)SvPV(ST(3), PL_na);
-		task= gearman_client_add_task_low_background(gc, NULL, gc, function_name,
-									unique, workload, (size_t)strlen(workload),
-									&ret);
+		w= savesvpv(workload);
+		fn_arg= safemalloc(sizeof(gearman_task_fn_arg_st));
+		if (fn_arg == NULL)
+			croak("Memory allocation error.\n");
+
+		memset(fn_arg, 0, sizeof(gearman_task_fn_arg_st));
+		fn_arg->flags= TASK_FN_ARG_CREATED;
+		fn_arg->client= gc;
+		fn_arg->workload= w;
+		task= gearman_client_add_task_low_background(gc, NULL, fn_arg, function_name,
+										unique, w, SvCUR(workload), &ret);
 
 		SV * task_sv= sv_newmortal();
 		sv_setref_pv(task_sv, "GearmanTaskPtr", task);
@@ -729,6 +870,9 @@ void
 xsgc_DESTROY(gc)
 		GearmanClient *gc
 	CODE:
+		gearman_client_task_cb *task_cb;
+		task_cb= (gearman_client_task_cb *)gearman_client_data(gc);
+		Safefree(task_cb);
 		gearman_client_free(gc);
 
 MODULE = Gearman::XS		PACKAGE = Gearman::XS::Worker
@@ -736,7 +880,11 @@ MODULE = Gearman::XS		PACKAGE = Gearman::XS::Worker
 GearmanWorker *
 GearmanWorker::new()
 	CODE:
-		RETVAL= (GearmanWorker *)gearman_worker_create(NULL);
+		gearman_worker_st *gw;
+		gw= gearman_worker_create(NULL);
+		gearman_worker_set_workload_free(gw, _perl_free, NULL);
+		gearman_worker_set_workload_malloc(gw, _perl_malloc, NULL);
+		RETVAL= (GearmanWorker *)gw;
 	OUTPUT:
 		RETVAL
 
@@ -761,11 +909,20 @@ xsgw_add_server(gw, ...)
 		RETVAL
 
 gearman_return_t
+xsgw_add_servers(gw, servers)
+		GearmanWorker *gw
+		const char *servers
+	CODE:
+		RETVAL= gearman_worker_add_servers(gw, servers);
+	OUTPUT:
+		RETVAL
+
+gearman_return_t
 xsgw_echo(gw, workload)
 		GearmanWorker *gw
-		const char *workload
+		SV * workload
 	CODE:
-		RETVAL= gearman_worker_echo(gw, &workload, (size_t)strlen(workload));
+		RETVAL= gearman_worker_echo(gw, SvPV_nolen(workload), SvCUR(workload));
 	OUTPUT:
 		RETVAL
 
@@ -779,13 +936,13 @@ xsgw_add_function(gw, function_name, timeout, worker_fn, fn_arg)
 	INIT:
 		gearman_worker_cb *worker_cb;
 	CODE:
-		worker_cb= malloc(sizeof(gearman_worker_cb));
+		worker_cb= safemalloc(sizeof(gearman_worker_cb));
 		if (worker_cb == NULL)
 			croak("Memory allocation error.\n");
 
 		memset(worker_cb, 0, sizeof(gearman_worker_cb));
 		worker_cb->func= newSVsv(worker_fn);
-		worker_cb->cb_arg= (void *)fn_arg;
+		worker_cb->cb_arg= fn_arg;
 		RETVAL= gearman_worker_add_function(gw, function_name, timeout,
 											_perl_worker_function_callback,
 											(void *)worker_cb );
@@ -824,13 +981,13 @@ xsgw_DESTROY(gw)
 
 MODULE = Gearman::XS		PACKAGE = GearmanJobPtr		PREFIX = xsgj_
 
-void
+SV *
 xsgj_workload(gj)
 		GearmanJob *gj
-	PPCODE:
-		const char *workload;
-		workload= gearman_job_workload(gj);
-		XPUSHs(sv_2mortal(newSVpv(workload, gearman_job_workload_size(gj))));
+	CODE:
+		RETVAL= newSVpvn(gearman_job_workload(gj), gearman_job_workload_size(gj));
+	OUTPUT:
+		RETVAL
 
 char *
 xsgj_handle(gj)
@@ -869,9 +1026,17 @@ xsgj_unique(gj)
 gearman_return_t
 xsgj_data(gj, data)
 		GearmanJob *gj
-		const char *data
+		SV * data
 	CODE:
-		RETVAL= gearman_job_data(gj, (void *)data, (size_t)strlen(data));
+		RETVAL= gearman_job_data(gj, SvPV_nolen(data), SvCUR(data));
+	OUTPUT:
+		RETVAL
+
+gearman_return_t
+xsgj_fail(gj)
+		GearmanJob *gj
+	CODE:
+		RETVAL= gearman_job_fail(gj);
 	OUTPUT:
 		RETVAL
 
@@ -885,13 +1050,13 @@ xsgt_job_handle(gt)
 	OUTPUT:
 		RETVAL
 
-void
+SV *
 xsgt_data(gt)
 		GearmanTask *gt
-	PPCODE:
-		const char *data;
-		data= gearman_task_data(gt);
-		XPUSHs(sv_2mortal(newSVpv(data, gearman_task_data_size(gt))));
+	CODE:
+		RETVAL= newSVpvn(gearman_task_data(gt), gearman_task_data_size(gt));
+	OUTPUT:
+		RETVAL
 
 int
 xsgt_data_size(gt)
@@ -922,5 +1087,13 @@ xsgt_denominator(gt)
 		GearmanTask *gt
 	CODE:
 		RETVAL= gearman_task_denominator(gt);
+	OUTPUT:
+		RETVAL
+
+const char *
+xsgt_uuid(gt)
+		GearmanTask *gt
+	CODE:
+		RETVAL= gearman_task_uuid(gt);
 	OUTPUT:
 		RETVAL

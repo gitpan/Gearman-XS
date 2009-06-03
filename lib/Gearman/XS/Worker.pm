@@ -8,6 +8,8 @@
 
 package Gearman::XS::Worker;
 
+our $VERSION = '0.2';
+
 use Gearman::XS;
 
 =head1 NAME
@@ -69,6 +71,12 @@ Returns a Gearman::XS::Worker object.
 Add a job server to a worker. This goes into a list of servers than can be
 used to run tasks. No socket I/O happens here, it is just added to a list.
 Returns a standard gearman return value.
+
+=head2 $worker->add_servers($servers)
+
+Add a list of job servers to a worker. The format for the server list is:
+SERVER[:PORT][,SERVER[:PORT]]... No socket I/O happens here, it is just added
+to a list. Returns a standard gearman return value.
 
 =head2 $worker->echo($data)
 

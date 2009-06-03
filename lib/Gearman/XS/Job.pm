@@ -8,6 +8,8 @@
 
 package Gearman::XS::Job;
 
+our $VERSION = '0.2';
+
 use Gearman::XS;
 
 =head1 NAME
@@ -45,6 +47,10 @@ Get the unique ID associated with a job.
 =head2 $job->data($data)
 
 Send data for a running job. Returns a standard gearman return value.
+
+=head2 $job->fail()
+
+Send fail status for a job. Returns a standard gearman return value.
 
 =head1 BUGS
 

@@ -8,6 +8,8 @@
 
 package Gearman::XS::Client;
 
+our $VERSION = '0.2';
+
 use Gearman::XS;
 
 =head1 NAME
@@ -64,6 +66,12 @@ Returns a Gearman::XS::Client object.
 Add a job server to a client. This goes into a list of servers than can be
 used to run tasks. No socket I/O happens here, it is just added to a list.
 Returns a standard gearman return value.
+
+=head2 $client->add_servers($servers)
+
+Add a list of job servers to a client. The format for the server list is:
+SERVER[:PORT][,SERVER[:PORT]]... No socket I/O happens here, it is just added
+to a list. Returns a standard gearman return value.
 
 =head2 $client->echo($data)
 
@@ -176,6 +184,12 @@ numerator and denominator.
 Get the status for a background job. Returns a list with 5 entries: standard
 gearman return value, boolean indicating the know status, boolean indicating
 the running status, and the precent complete numerator and denominator.
+
+=head1 CALLBACKS
+
+Please make sure that callback functions always explicitly return a valid
+gearman_return_t value. An implicitly returned value, for example from a print
+statement can cause the client connection to abort.
 
 =head1 BUGS
 

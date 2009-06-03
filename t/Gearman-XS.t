@@ -9,14 +9,15 @@
 use strict;
 use warnings;
 
-use Test::More tests => 88;
+use Test::More tests => 105;
 BEGIN { use_ok('Gearman::XS') };
 BEGIN { use_ok('Gearman::XS::Client') };
 BEGIN { use_ok('Gearman::XS::Worker') };
 
+use Storable;
+
 # import constants
 use Gearman::XS qw(:constants);
-
 
 my ($ret, $result, $job_handle, $task);
 
@@ -37,6 +38,7 @@ is($client->error(), '');
 is($client->add_server(), GEARMAN_SUCCESS);
 is($client->add_server('localhost'), GEARMAN_SUCCESS);
 is($client->add_server('127.0.0.1', 4730), GEARMAN_SUCCESS);
+is($client->add_servers('127.0.0.1:4730,127.0.0.1'), GEARMAN_SUCCESS);
 
 # worker
 my $worker = new Gearman::XS::Worker;
@@ -50,9 +52,10 @@ is($worker->error(), '');
 is($worker->add_server(), GEARMAN_SUCCESS);
 is($worker->add_server('127.0.0.1'), GEARMAN_SUCCESS);
 is($worker->add_server('localhost', 4730), GEARMAN_SUCCESS);
+is($client->add_servers('localhost:4730,127.0.0.1'), GEARMAN_SUCCESS);
 
 SKIP: {
-    skip "Needs gearman server and t/test_worker.pl", 73;
+    skip "Needs gearman server and t/test_worker.pl", 88;
 
 	# gearman server running?
 	is($client->echo("blubbtest"), GEARMAN_SUCCESS);
@@ -62,6 +65,18 @@ SKIP: {
 	($ret, $result) = $client->do("reverse", 'do');
 	is($ret, GEARMAN_SUCCESS);
 	is($result, reverse('do'));
+
+	# this tests perls INT return type
+	($ret, $result) = $client->do("add", '3 4');
+	is($ret, GEARMAN_SUCCESS);
+	is($result, 7);
+
+	# test binary data
+	my %hash = ( key => 'value' );
+	my $storable = Storable::nfreeze(\%hash);
+	($ret, $result) = $client->do("storable", $storable);
+	is($ret, GEARMAN_SUCCESS);
+	is_deeply(\%hash, Storable::thaw($result));
 
 	($ret, $result) = $client->do("reverse", 'do unique', 'unique');
 	is($ret, GEARMAN_SUCCESS);
@@ -115,7 +130,11 @@ SKIP: {
 	isa_ok($task, 'GearmanTaskPtr');
 
 	# test fail callback
-	($ret, $task) = $client->add_task("fail", "I'll be dead");
+	($ret, $task) = $client->add_task("die", "I'll be dead");
+	is($ret, GEARMAN_SUCCESS);
+	isa_ok($task, 'GearmanTaskPtr');
+
+	($ret, $task) = $client->add_task("fail", "I will fail.");
 	is($ret, GEARMAN_SUCCESS);
 	isa_ok($task, 'GearmanTaskPtr');
 
@@ -123,11 +142,13 @@ SKIP: {
 	my $status_task;
 	($ret, $status_task) = $client->add_task("status", "I'll phone back 4 times");
 	is($ret, GEARMAN_SUCCESS);
-	isa_ok($task, 'GearmanTaskPtr');
+	isa_ok($status_task, 'GearmanTaskPtr');
 	is($status_task->numerator(), 0);
 	is($status_task->denominator(), 0);
 
 	# callback functions
+	$client->set_created_fn(\&created_cb);
+	$client->set_data_fn(\&data_cb);
 	$client->set_complete_fn(\&completed_cb);
 	$client->set_fail_fn(\&fail_cb);
 	$client->set_status_fn(\&status_cb);
@@ -135,14 +156,27 @@ SKIP: {
 	# run concurrent tasks
 	is($client->run_tasks(), GEARMAN_SUCCESS);
 
-	# check status results
-	is($status_task->numerator(), 4);
-	is($status_task->denominator(), 4);
-
 	# check callback results
 	is($completed, 4);
-	is($failed, 1);
+	is($failed, 2);
 };
+
+sub created_cb {
+	my ($task) = @_;
+
+	like($task->job_handle(), qr/H:.+:.+/);
+
+	return GEARMAN_SUCCESS;
+}
+
+sub data_cb {
+	my ($task) = @_;
+
+	like($task->job_handle(), qr/H:.+:.+/);
+	like($task->data(), qr/\w+/);
+
+	return GEARMAN_SUCCESS;
+}
 
 sub completed_cb {
 	my ($task) = @_;
@@ -161,7 +195,7 @@ sub fail_cb {
 	my ($task) = @_;
 
 	like($task->job_handle(), qr/H:.+:.+/);
-	is($task->function(), "fail");
+	like($task->function(), qr/(fail|die)/);
 
 	$failed++;
 
