@@ -8,7 +8,7 @@
 
 package Gearman::XS::Worker;
 
-our $VERSION = '0.2';
+our $VERSION= '0.3';
 
 use Gearman::XS;
 
@@ -24,19 +24,23 @@ Gearman::XS::Worker - Perl worker for gearman using libgearman
   $worker = new Gearman::XS::Worker;
 
   $ret = $worker->add_server($host, $port);
-  if ($ret != GEARMAN_SUCCESS) {
+  if ($ret != GEARMAN_SUCCESS)
+  {
     printf(STDERR "%s\n", $worker->error());
     exit(1);
   }
 
   $ret = $worker->add_function("reverse", 0, \&reverse, $options);
-  if ($ret != GEARMAN_SUCCESS) {
+  if ($ret != GEARMAN_SUCCESS)
+  {
     printf(STDERR "%s\n", $worker->error());
   }
 
-  while (1) {
+  while (1)
+  {
     my $ret = $worker->work();
-    if ($ret != GEARMAN_SUCCESS) {
+    if ($ret != GEARMAN_SUCCESS)
+    {
       printf(STDERR "%s\n", $worker->error());
     }
   }

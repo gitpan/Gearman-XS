@@ -3,7 +3,12 @@ Makefile.PL
 MANIFEST
 README
 XS.xs
-t/Gearman-XS.t
+t/00-use.t
+t/02-pod.t
+t/03-basic.t
+t/04-live.t
+t/05-live-worker.t
+t/lib/TestLib.pm
 t/test_worker.pl
 examples/echo_client.pl
 examples/echo_worker.pl

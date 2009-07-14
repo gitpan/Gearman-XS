@@ -8,7 +8,7 @@
 
 package Gearman::XS::Job;
 
-our $VERSION = '0.2';
+our $VERSION= '0.3';
 
 use Gearman::XS;
 

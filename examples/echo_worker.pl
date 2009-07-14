@@ -22,36 +22,40 @@ use Gearman::XS qw(:constants);
 use Gearman::XS::Worker;
 
 my %opts;
-if (!getopts('h:p:', \%opts)) {
-	usage();
-	exit(1);
+if (!getopts('h:p:', \%opts))
+{
+  usage();
+  exit(1);
 }
 
-my $host = $opts{h} || '';
-my $port = $opts{p} || 0;
+my $host= $opts{h} || '';
+my $port= $opts{p} || 0;
 
-if (scalar @ARGV < 1) {
-	usage();
-	exit(1);
+if (scalar @ARGV < 1)
+{
+  usage();
+  exit(1);
 }
 
-my $worker = new Gearman::XS::Worker;
+my $worker= new Gearman::XS::Worker;
 
-my $ret = $worker->add_server($host, $port);
-if ($ret != GEARMAN_SUCCESS) {
-	printf(STDERR "%s\n", $worker->error());
-	exit(1);
+my $ret= $worker->add_server($host, $port);
+if ($ret != GEARMAN_SUCCESS)
+{
+  printf(STDERR "%s\n", $worker->error());
+  exit(1);
 }
 
-$ret = $worker->echo($ARGV[0]);
-if ($ret != GEARMAN_SUCCESS) {
-	printf(STDERR "%s\n", $worker->error());
+$ret= $worker->echo($ARGV[0]);
+if ($ret != GEARMAN_SUCCESS)
+{
+  printf(STDERR "%s\n", $worker->error());
 }
 
 exit;
 
 sub usage {
-	printf("\nusage: $0 [-h <host>] [-p <port>] <string>\n");
-	printf("\t-h <host> - job server host\n");
-	printf("\t-p <port> - job server port\n");
+  printf("\nusage: $0 [-h <host>] [-p <port>] <string>\n");
+  printf("\t-h <host> - job server host\n");
+  printf("\t-p <port> - job server port\n");
 }

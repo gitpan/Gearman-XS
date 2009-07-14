@@ -8,10 +8,16 @@ INSTALLATION
 
 To install this module type the following:
 
-   perl Makefile.PL
-   make
-   make test
-   make install
+  perl Makefile.PL
+  make
+  make test
+  make install
+
+To run the complete testsuite make sure you have 'gearmand' in your PATH and
+type:
+
+GEARMAN_LIVE_TEST=1 make test
+
 
 DEPENDENCIES
 
@@ -23,7 +29,7 @@ This module requires these other modules and libraries:
 
 DEVELOPMENT
 
-Development of Gearman::XS is open and coordinated on launchpad.
+Development of Gearman::XS is coordinated on launchpad.
 Visit http://launchpad.net/gearmanxs for more information
 
 COPYRIGHT AND LICENCE

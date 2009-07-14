@@ -18,113 +18,133 @@ use Getopt::Std;
 use FindBin qw($Bin);
 use lib ("$Bin/../blib/lib", "$Bin/../blib/arch");
 
-use constant REVERSE_WORKER_OPTIONS_NONE	=> 0;
-use constant REVERSE_WORKER_OPTIONS_DATA	=> (1 << 0);
-use constant REVERSE_WORKER_OPTIONS_STATUS	=> (1 << 1);
-use constant REVERSE_WORKER_OPTIONS_UNIQUE	=> (1 << 2);
+use constant REVERSE_WORKER_OPTIONS_NONE    => 0;
+use constant REVERSE_WORKER_OPTIONS_DATA    => (1 << 0);
+use constant REVERSE_WORKER_OPTIONS_STATUS  => (1 << 1);
+use constant REVERSE_WORKER_OPTIONS_UNIQUE  => (1 << 2);
 
 use Gearman::XS qw(:constants);
 use Gearman::XS::Worker;
 
 my %opts;
-if (!getopts('h:p:c:dsu', \%opts)) {
-	usage();
-	exit(1);
+if (!getopts('h:p:c:dsu', \%opts))
+{
+  usage();
+  exit(1);
 }
 
-my $host	= $opts{h}	|| '';
-my $port	= $opts{p}	|| 0;
-my $count	= $opts{c}	|| 0;
+my $host= $opts{h} || '';
+my $port= $opts{p} || 0;
+my $count= $opts{c} || 0;
 
-my $options	= REVERSE_WORKER_OPTIONS_NONE;
-$options |= REVERSE_WORKER_OPTIONS_DATA
-	if $opts{d};
-$options |= REVERSE_WORKER_OPTIONS_STATUS
-	if $opts{s};
-$options |= REVERSE_WORKER_OPTIONS_UNIQUE
-	if $opts{u};
+my $options= REVERSE_WORKER_OPTIONS_NONE;
 
-my $worker = new Gearman::XS::Worker;
-
-if ($options & REVERSE_WORKER_OPTIONS_UNIQUE) {
-	$worker->set_options(GEARMAN_WORKER_GRAB_UNIQ, 1);
+if ($opts{d})
+{
+  $options |= REVERSE_WORKER_OPTIONS_DATA
+}
+if ($opts{s})
+{
+  $options |= REVERSE_WORKER_OPTIONS_STATUS
+}
+if ($opts{u})
+{
+  $options |= REVERSE_WORKER_OPTIONS_UNIQUE
 }
 
-my $ret = $worker->add_server($host, $port);
-if ($ret != GEARMAN_SUCCESS) {
-	printf(STDERR "%s\n", $worker->error());
-	exit(1);
+my $worker= new Gearman::XS::Worker;
+
+if ($options & REVERSE_WORKER_OPTIONS_UNIQUE)
+{
+  $worker->set_options(GEARMAN_WORKER_GRAB_UNIQ, 1);
 }
 
-$ret = $worker->add_function("reverse", 0, \&reverse, $options);
-if ($ret != GEARMAN_SUCCESS) {
-	printf(STDERR "%s\n", $worker->error());
+my $ret= $worker->add_server($host, $port);
+if ($ret != GEARMAN_SUCCESS)
+{
+  printf(STDERR "%s\n", $worker->error());
+  exit(1);
 }
 
-while (1) {
-	my $ret = $worker->work();
-	if ($ret != GEARMAN_SUCCESS) {
-		printf(STDERR "%s\n", $worker->error());
-	}
+$ret= $worker->add_function("reverse", 0, \&reverse, $options);
+if ($ret != GEARMAN_SUCCESS)
+{
+  printf(STDERR "%s\n", $worker->error());
+}
 
-	if ($count > 0) {
-		$count--;
-		if ($count == 0) {
-			last;
-		}
-	}
+while (1)
+{
+  my $ret = $worker->work();
+  if ($ret != GEARMAN_SUCCESS)
+  {
+    printf(STDERR "%s\n", $worker->error());
+  }
+
+  if ($count > 0)
+  {
+    $count--;
+    if ($count == 0)
+    {
+      last;
+    }
+  }
 }
 
 sub reverse {
-	my ($job, $options) = @_;
+  my ($job, $options) = @_;
 
-	my $workload		= $job->workload();
-	my $workload_size	= length($workload);
+  my $workload= $job->workload();
+  my $workload_size= length($workload);
 
-	my $result = '';
+  my $result= '';
 
-	for (my $i = $workload_size; $i > 0; $i--) {
-		my $letter = substr($workload, ($i - 1), 1);
-		$result .= $letter;
+  for (my $i= $workload_size; $i > 0; $i--)
+  {
+    my $letter= substr($workload, ($i - 1), 1);
+    $result .= $letter;
 
-		if ($options & REVERSE_WORKER_OPTIONS_DATA) {
-			my $ret = $job->data($letter);
-			if ($ret != GEARMAN_SUCCESS) {
-				return '';
-			}
-		}
+    if ($options & REVERSE_WORKER_OPTIONS_DATA)
+    {
+      my $ret= $job->data($letter);
+      if ($ret != GEARMAN_SUCCESS)
+      {
+        return '';
+      }
+    }
 
-		if ($options & REVERSE_WORKER_OPTIONS_STATUS) {
-			my $ret = $job->status($workload_size - $i, $workload_size);
-			if ($ret != GEARMAN_SUCCESS) {
-				return '';
-			}
-			sleep(1);
-		}
+    if ($options & REVERSE_WORKER_OPTIONS_STATUS)
+    {
+      my $ret= $job->status($workload_size - $i, $workload_size);
+      if ($ret != GEARMAN_SUCCESS)
+      {
+        return '';
+      }
+      sleep(1);
+    }
+  }
 
-	}
+  printf("Job=%s%s%s Workload=%s Result=%s\n",
+          $job->handle(),
+          $options & REVERSE_WORKER_OPTIONS_UNIQUE ? " Unique=" : "",
+          $options & REVERSE_WORKER_OPTIONS_UNIQUE ? $job->unique() : "",
+          $job->workload(), $result);
 
-	printf("Job=%s%s%s Workload=%s Result=%s\n",
-			$job->handle(),
-			$options & REVERSE_WORKER_OPTIONS_UNIQUE ? " Unique=" : "",
-			$options & REVERSE_WORKER_OPTIONS_UNIQUE ? $job->unique() : "",
-			$job->workload(), $result);
+  if ($options & REVERSE_WORKER_OPTIONS_DATA)
+  {
+    return '';
+  }
 
-	if ($options & REVERSE_WORKER_OPTIONS_DATA) {
-		return '';
-	}
-
-	return $result;
+  return $result;
 }
 
 sub usage {
-	printf("\nusage: %s [-h <host>] [-p <port>]\n", $0);
-	printf("\t-c <count> - number of jobs to run before exiting\n");
-	printf("\t-d         - send result back in data chunks\n");
-	printf("\t-h <host>  - job server host\n");
-	printf("\t-p <port>  - job server port\n");
-	printf("\t-s         - send status updates and sleep while running job\n");
-	printf("\t-u         - when grabbing jobs, grab the unique id\n");
+  printf("\nusage: %s [-h <host>] [-p <port>]\n", $0);
+  printf("\t-c <count> - number of jobs to run before exiting\n");
+  printf("\t-d         - send result back in data chunks\n");
+  printf("\t-h <host>  - job server host\n");
+  printf("\t-p <port>  - job server port\n");
+  printf("\t-s         - send status updates and sleep while running job\n");
+  printf("\t-u         - when grabbing jobs, grab the unique id\n");
 }
 
 exit;

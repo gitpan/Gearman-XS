@@ -8,7 +8,7 @@
 
 package Gearman::XS::Client;
 
-our $VERSION = '0.2';
+our $VERSION = '0.3';
 
 use Gearman::XS;
 
@@ -24,20 +24,23 @@ Gearman::XS::Client - Perl client for gearman using libgearman
   $client = new Gearman::XS::Client;
 
   $ret = $client->add_server($host, $port);
-  if ($ret != GEARMAN_SUCCESS) {
+  if ($ret != GEARMAN_SUCCESS)
+  {
     printf(STDERR "%s\n", $client->error());
     exit(1);
   }
 
   # single client interface
   ($ret, $result) = $client->do("reverse", 'teststring');
-  if ($ret == GEARMAN_SUCCESS) {
+  if ($ret == GEARMAN_SUCCESS)
+  {
     printf("Result=%s\n", $result);
   }
 
   # background client interface
   ($ret, $job_handle) = $client->do_background('reverse', 'teststring);
-  if ($ret != GEARMAN_SUCCESS) {
+  if ($ret != GEARMAN_SUCCESS)
+  {
     printf(STDERR "%s\n", $client->error());
     exit(1);
   }
@@ -104,7 +107,7 @@ standard gearman return value, the second is the job handle.
 Run a high priority task in the background and return a list with two entries:
 the first is a standard gearman return value, the second is the job handle.
 
-=head2 $client->do_log_background($function_name, $workload)
+=head2 $client->do_low_background($function_name, $workload)
 
 Run a low priority task in the background and return a list with two entries:
 the first is a standard gearman return value, the second is the job handle.

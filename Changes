@@ -1,3 +1,8 @@
+0.3 - 2009-07-14
+ * Fix freeing of job handle on connection error
+ * improve test suite (patch by Johannes Plunien)
+ * rework XS code
+
 0.2 - 2009-06-02
  * Requires libgearman 0.7
  * Fix bugs #379586 #380279

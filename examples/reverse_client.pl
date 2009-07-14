@@ -22,60 +22,70 @@ use Gearman::XS qw(:constants);
 use Gearman::XS::Client;
 
 my %opts;
-if (!getopts('h:p:', \%opts)) {
-	usage();
-	exit(1);
+if (!getopts('h:p:', \%opts))
+{
+  usage();
+  exit(1);
 }
 
-my $host = $opts{h} || '';
-my $port = $opts{p} || 0;
+my $host= $opts{h} || '';
+my $port= $opts{p} || 0;
 
-if (scalar @ARGV < 1) {
-	usage();
-	exit(1);
+if (scalar @ARGV < 1)
+{
+  usage();
+  exit(1);
 }
 
-my $client = new Gearman::XS::Client;
+my $client= new Gearman::XS::Client;
 
 my $ret = $client->add_server($host, $port);
-if ($ret != GEARMAN_SUCCESS) {
-	printf(STDERR "%s\n", $client->error());
-	exit(1);
+if ($ret != GEARMAN_SUCCESS)
+{
+  printf(STDERR "%s\n", $client->error());
+  exit(1);
 }
 
-while (1) {
-	my ($ret, $result) = $client->do('reverse', $ARGV[0]);
-	if ($ret == GEARMAN_WORK_DATA) {
-		printf("Data=%s\n", $result);
-		next;
-	}
-	elsif ($ret == GEARMAN_WORK_STATUS) {
-		my ($numerator, $denominator) = $client->do_status();
-		printf("Status: %d/%d\n", $numerator, $denominator);
-		next;
-	}
-	elsif ($ret == GEARMAN_SUCCESS) {
-		printf("Result=%s\n", ($result || ''));
-	}
-	elsif ($ret == GEARMAN_WORK_FAIL) {
-		printf(STDERR "Work failed\n");
-	}
-	else {
-		printf(STDERR "%s\n", $client->error());
-	}
+while (1)
+{
+  my ($ret, $result) = $client->do('reverse', $ARGV[0]);
+  if ($ret == GEARMAN_WORK_DATA)
+  {
+    printf("Data=%s\n", $result);
+    next;
+  }
+  elsif ($ret == GEARMAN_WORK_STATUS)
+  {
+    my ($numerator, $denominator) = $client->do_status();
+    printf("Status: %d/%d\n", $numerator, $denominator);
+    next;
+  }
+  elsif ($ret == GEARMAN_SUCCESS)
+  {
+    printf("Result=%s\n", ($result || ''));
+  }
+  elsif ($ret == GEARMAN_WORK_FAIL)
+  {
+    printf(STDERR "Work failed\n");
+  }
+  else
+  {
+    printf(STDERR "%s\n", $client->error());
+  }
 
-	last;
+  last;
 }
 
 $ret = $client->echo($ARGV[0]);
-if ($ret != GEARMAN_SUCCESS) {
-	printf(STDERR "%s\n", $client->error());
+if ($ret != GEARMAN_SUCCESS)
+{
+  printf(STDERR "%s\n", $client->error());
 }
 
 exit;
 
 sub usage {
-	printf("\nusage: $0 [-h <host>] [-p <port>] <string>\n");
-	printf("\t-h <host> - job server host\n");
-	printf("\t-p <port> - job server port\n");
+  printf("\nusage: $0 [-h <host>] [-p <port>] <string>\n");
+  printf("\t-h <host> - job server host\n");
+  printf("\t-p <port> - job server port\n");
 }

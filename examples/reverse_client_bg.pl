@@ -22,55 +22,61 @@ use Gearman::XS qw(:constants);
 use Gearman::XS::Client;
 
 my %opts;
-if (!getopts('h:p:', \%opts)) {
-	usage();
-	exit(1);
+if (!getopts('h:p:', \%opts))
+{
+  usage();
+  exit(1);
 }
 
-my $host = $opts{h} || '';
-my $port = $opts{p} || 0;
+my $host= $opts{h} || '';
+my $port= $opts{p} || 0;
 
-if (scalar @ARGV < 1) {
-	usage();
-	exit(1);
+if (scalar @ARGV < 1)
+{
+  usage();
+  exit(1);
 }
 
-my $client = new Gearman::XS::Client;
+my $client= new Gearman::XS::Client;
 
 my ($ret, $job_handle);
 
-$ret = $client->add_server($host, $port);
-if ($ret != GEARMAN_SUCCESS) {
-	printf(STDERR "%s\n", $client->error());
-	exit(1);
+$ret= $client->add_server($host, $port);
+if ($ret != GEARMAN_SUCCESS)
+{
+  printf(STDERR "%s\n", $client->error());
+  exit(1);
 }
 
 ($ret, $job_handle) = $client->do_background('reverse', $ARGV[0]);
-if ($ret != GEARMAN_SUCCESS) {
-	printf(STDERR "%s\n", $client->error());
-	exit(1);
+if ($ret != GEARMAN_SUCCESS)
+{
+  printf(STDERR "%s\n", $client->error());
+  exit(1);
 }
 
 printf("Background Job Handle=%s\n", $job_handle);
 
-while (1) {
-	my ($ret, $is_known, $is_running, $numerator, $denominator) = $client->job_status($job_handle);
+while (1)
+{
+  my ($ret, $is_known, $is_running, $numerator, $denominator) = $client->job_status($job_handle);
 
-	printf("Known=%s, Running=%s, Percent Complete=%d/%d\n",
-			$is_known ? "true" : "false", $is_running ? "true" : "false",
-			$numerator, $denominator);
+  printf("Known=%s, Running=%s, Percent Complete=%d/%d\n",
+          $is_known ? "true" : "false", $is_running ? "true" : "false",
+          $numerator, $denominator);
 
-	if (!$is_known) {
-		last;
-	}
+  if (!$is_known)
+  {
+    last;
+  }
 
-	sleep(1);
+  sleep(1);
 }
 
 exit;
 
 sub usage {
-	printf("\nusage: $0 [-h <host>] [-p <port>] <string>\n");
-	printf("\t-h <host> - job server host\n");
-	printf("\t-p <port> - job server port\n");
+  printf("\nusage: $0 [-h <host>] [-p <port>] <string>\n");
+  printf("\t-h <host> - job server host\n");
+  printf("\t-p <port> - job server port\n");
 }
