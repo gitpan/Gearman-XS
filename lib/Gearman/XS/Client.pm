@@ -8,7 +8,7 @@
 
 package Gearman::XS::Client;
 
-our $VERSION = '0.3';
+our $VERSION = '0.4';
 
 use Gearman::XS;
 
@@ -172,6 +172,11 @@ Set callback function when a task has failed. No return value.
 =head2 $client->set_status_fn($subref)
 
 Set callback function when there is a status packet for a task. No return value.
+
+=head2 $client->set_warning_fn($subref)
+
+Set callback function when there is a warning packet for a task.
+No return value.
 
 =head2 $client->error()
 

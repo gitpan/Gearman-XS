@@ -9,7 +9,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 18;
+use Test::More tests => 19;
 
 # import constants
 use Gearman::XS qw(:constants);
@@ -51,6 +51,7 @@ $worker->add_server('213.3.4.5', 61333);
 
 # no functions
 is($worker->work(), GEARMAN_NO_REGISTERED_FUNCTIONS);
+is($worker->grab_job(), GEARMAN_NO_REGISTERED_FUNCTIONS);
 
 # no connection
 my ($ret, $job_handle) = $client->do_background("reverse", 'do background', 'unique');

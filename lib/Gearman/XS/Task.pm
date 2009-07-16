@@ -8,7 +8,7 @@
 
 package Gearman::XS::Task;
 
-our $VERSION= '0.3';
+our $VERSION= '0.4';
 
 use Gearman::XS;
 

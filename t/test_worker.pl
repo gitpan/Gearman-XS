@@ -26,6 +26,8 @@ $worker->add_function("status", 0, \&status, '');
 $worker->add_function("storable", 0, \&storable, '');
 $worker->add_function("add", 0, \&add, '');
 $worker->add_function("quit", 0, \&quit, '');
+$worker->add_function("complete", 0, \&complete, '');
+$worker->add_function("warning", 0, \&warning, '');
 
 while (1)
 {
@@ -76,6 +78,12 @@ sub status {
   return 1;
 }
 
+sub warning {
+  my ($job) = @_;
+
+  $job->warning("argh");
+}
+
 sub add {
   my ($job) = @_;
 
@@ -108,4 +116,11 @@ sub fail {
           $job->handle(), $job->function_name(), $job->workload());
 
   $job->fail();
+}
+
+sub complete {
+  my ($job) = @_;
+
+  $job->complete($job->workload());
+  return;
 }

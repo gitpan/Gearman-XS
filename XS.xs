@@ -10,6 +10,9 @@
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
+#define NEED_newCONSTSUB
+#define NEED_sv_2pv_flags
+#include "ppport.h"
 
 #include <libgearman/gearman.h>
 
@@ -29,6 +32,7 @@ typedef struct gearman_xs_client {
   SV * complete_fn;
   SV * fail_fn;
   SV * status_fn;
+  SV * warning_fn;
 } gearman_xs_client;
 
 /* worker cb_arg to pass our actual perl function */
@@ -136,10 +140,8 @@ void *_perl_worker_function_callback(gearman_job_st *job,
   return result;
 }
 
-static gearman_return_t _perl_task_complete_fn(gearman_task_st *task)
+static gearman_return_t _perl_task_callback(SV * fn, gearman_task_st *task)
 {
-  gearman_task_fn_arg_st *fn_arg_st;
-  gearman_xs_client *self;
   int count;
   gearman_return_t ret;
 
@@ -148,14 +150,11 @@ static gearman_return_t _perl_task_complete_fn(gearman_task_st *task)
   ENTER;
   SAVETMPS;
 
-  fn_arg_st= (gearman_task_fn_arg_st *)gearman_task_fn_arg(task);
-  self= (gearman_xs_client *)gearman_client_data(fn_arg_st->client);
-
   PUSHMARK(SP);
   XPUSHs(_bless("Gearman::XS::Task", task));
   PUTBACK;
 
-  count= call_sv(self->complete_fn, G_SCALAR);
+  count= call_sv(fn, G_SCALAR);
   if (count != 1)
     croak("Invalid number of return values.\n");
 
@@ -168,146 +167,76 @@ static gearman_return_t _perl_task_complete_fn(gearman_task_st *task)
   LEAVE;
 
   return ret;
+}
+
+static gearman_return_t _perl_task_complete_fn(gearman_task_st *task)
+{
+  gearman_task_fn_arg_st *fn_arg_st;
+  gearman_xs_client *self;
+
+  fn_arg_st= (gearman_task_fn_arg_st *)gearman_task_fn_arg(task);
+  self= (gearman_xs_client *)gearman_client_data(fn_arg_st->client);
+
+  return _perl_task_callback(self->complete_fn, task);
 }
 
 static gearman_return_t _perl_task_fail_fn(gearman_task_st *task)
 {
   gearman_task_fn_arg_st *fn_arg_st;
   gearman_xs_client *self;
-  int count;
-  gearman_return_t ret;
-
-  dSP;
-
-  ENTER;
-  SAVETMPS;
 
   fn_arg_st= (gearman_task_fn_arg_st *)gearman_task_fn_arg(task);
   self= (gearman_xs_client *)gearman_client_data(fn_arg_st->client);
 
-  PUSHMARK(SP);
-  XPUSHs(_bless("Gearman::XS::Task", task));
-  PUTBACK;
-
-  count= call_sv(self->fail_fn, G_SCALAR);
-  if (count != 1)
-    croak("Invalid number of return values.\n");
-
-  SPAGAIN;
-
-  ret= POPi;
-
-  PUTBACK;
-  FREETMPS;
-  LEAVE;
-
-  return ret;
+  return _perl_task_callback(self->fail_fn, task);
 }
 
 static gearman_return_t _perl_task_status_fn(gearman_task_st *task)
 {
   gearman_task_fn_arg_st *fn_arg_st;
   gearman_xs_client *self;
-  int count;
-  gearman_return_t ret;
-
-  dSP;
-
-  ENTER;
-  SAVETMPS;
 
   fn_arg_st= (gearman_task_fn_arg_st *)gearman_task_fn_arg(task);
   self= (gearman_xs_client *)gearman_client_data(fn_arg_st->client);
 
-  PUSHMARK(SP);
-  XPUSHs(_bless("Gearman::XS::Task", task));
-  PUTBACK;
-
-  count= call_sv(self->status_fn, G_SCALAR);
-  if (count != 1)
-    croak("Invalid number of return values.\n");
-
-  SPAGAIN;
-
-  ret= POPi;
-
-  PUTBACK;
-  FREETMPS;
-  LEAVE;
-
-  return ret;
+  return _perl_task_callback(self->status_fn, task);
 }
 
 static gearman_return_t _perl_task_created_fn(gearman_task_st *task)
 {
   gearman_task_fn_arg_st *fn_arg_st;
   gearman_xs_client *self;
-  int count;
-  gearman_return_t ret;
-
-  dSP;
-
-  ENTER;
-  SAVETMPS;
 
   fn_arg_st= (gearman_task_fn_arg_st *)gearman_task_fn_arg(task);
   self= (gearman_xs_client *)gearman_client_data(fn_arg_st->client);
 
-  PUSHMARK(SP);
-  XPUSHs(_bless("Gearman::XS::Task", task));
-  PUTBACK;
-
-  count= call_sv(self->created_fn, G_SCALAR);
-  if (count != 1)
-    croak("Invalid number of return values.\n");
-
-  SPAGAIN;
-
-  ret= POPi;
-
-  PUTBACK;
-  FREETMPS;
-  LEAVE;
-
-  return ret;
+  return _perl_task_callback(self->created_fn, task);
 }
 
 static gearman_return_t _perl_task_data_fn(gearman_task_st *task)
 {
   gearman_task_fn_arg_st *fn_arg_st;
   gearman_xs_client *self;
-  int count;
-  gearman_return_t ret;
-
-  dSP;
-
-  ENTER;
-  SAVETMPS;
 
   fn_arg_st= (gearman_task_fn_arg_st *)gearman_task_fn_arg(task);
   self= (gearman_xs_client *)gearman_client_data(fn_arg_st->client);
 
-  PUSHMARK(SP);
-  XPUSHs(_bless("Gearman::XS::Task", task));
-  PUTBACK;
+  return _perl_task_callback(self->data_fn, task);
+}
 
-  count= call_sv(self->data_fn, G_SCALAR);
-  if (count != 1)
-    croak("Invalid number of return values.\n");
+static gearman_return_t _perl_task_warning_fn(gearman_task_st *task)
+{
+  gearman_task_fn_arg_st *fn_arg_st;
+  gearman_xs_client *self;
 
-  SPAGAIN;
+  fn_arg_st= (gearman_task_fn_arg_st *)gearman_task_fn_arg(task);
+  self= (gearman_xs_client *)gearman_client_data(fn_arg_st->client);
 
-  ret= POPi;
-
-  PUTBACK;
-  FREETMPS;
-  LEAVE;
-
-  return ret;
+  return _perl_task_callback(self->warning_fn, task);
 }
 
 SV* _create_client() {
-  gearman_xs_client * self;
+  gearman_xs_client *self;
 
   Newxz(self, 1, gearman_xs_client);
   self->client= gearman_client_create(NULL);
@@ -799,6 +728,14 @@ set_status_fn(self, fn)
     self->status_fn= newSVsv(fn);
     gearman_client_set_status_fn(self->client, _perl_task_status_fn);
 
+void
+set_warning_fn(self, fn)
+    gearman_xs_client *self
+    SV * fn
+  CODE:
+    self->warning_fn= newSVsv(fn);
+    gearman_client_set_warning_fn(self->client, _perl_task_warning_fn);
+
 const char *
 error(self)
     gearman_xs_client *self
@@ -934,6 +871,17 @@ set_options(self, options, data)
     gearman_worker_set_options(self, options, data);
 
 void
+grab_job(self)
+    gearman_xs_worker *self
+  PREINIT:
+    gearman_return_t ret;
+  PPCODE:
+    (void)gearman_worker_grab_job(self, &(self->work_job), &ret);
+    XPUSHs(sv_2mortal(newSViv(ret)));
+    if (ret == GEARMAN_SUCCESS)
+      XPUSHs(_bless("Gearman::XS::Job", &(self->work_job)));
+
+void
 DESTROY(self)
     gearman_xs_worker *self
   CODE:
@@ -997,6 +945,24 @@ fail(self)
     gearman_xs_job *self
   CODE:
     RETVAL= gearman_job_fail(self);
+  OUTPUT:
+    RETVAL
+
+gearman_return_t
+complete(self, result)
+    gearman_xs_job *self
+    SV * result
+  CODE:
+    RETVAL= gearman_job_complete(self, SvPV_nolen(result), SvCUR(result));
+  OUTPUT:
+    RETVAL
+
+gearman_return_t
+warning(self, warning)
+    gearman_xs_job *self
+    SV * warning
+  CODE:
+    RETVAL= gearman_job_warning(self, SvPV_nolen(warning), SvCUR(warning));
   OUTPUT:
     RETVAL
 

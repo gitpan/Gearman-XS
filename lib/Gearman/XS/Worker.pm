@@ -8,7 +8,7 @@
 
 package Gearman::XS::Worker;
 
-our $VERSION= '0.3';
+our $VERSION= '0.4';
 
 use Gearman::XS;
 
@@ -97,6 +97,10 @@ return value.
 
 Wait for a job and call the appropriate callback function when it gets one.
 Returns a standard gearman return value.
+
+=head2 $worker->grab_job()
+
+Get a job from one of the job servers. Returns a standard gearman return value.
 
 =head2 $worker->error()
 

@@ -8,7 +8,7 @@
 
 package Gearman::XS::Job;
 
-our $VERSION= '0.3';
+our $VERSION= '0.4';
 
 use Gearman::XS;
 
@@ -51,6 +51,15 @@ Send data for a running job. Returns a standard gearman return value.
 =head2 $job->fail()
 
 Send fail status for a job. Returns a standard gearman return value.
+
+=head2 $job->complete($result)
+
+Send result and complete status for a job. Returns a standard gearman return
+value.
+
+=head2 $job->warning($warning)
+
+Send warning for a running job. Returns a standard gearman return value.
 
 =head1 BUGS
 

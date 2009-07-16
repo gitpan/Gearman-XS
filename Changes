@@ -1,3 +1,9 @@
+0.4 - 2009-07-16
+ * fix perl compatibility issues
+ * add worker grab_job() function
+ * add job complete() function
+ * add job warning() function and ability to set a client warning callback function
+ 
 0.3 - 2009-07-14
  * Fix freeing of job handle on connection error
  * improve test suite (patch by Johannes Plunien)

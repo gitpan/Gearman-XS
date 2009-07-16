@@ -22,4 +22,5 @@ lib/Gearman/XS/Worker.pm
 lib/Gearman/XS/Job.pm
 lib/Gearman/XS/Task.pm
 typemap
+ppport.h
 META.yml                                 Module meta-data (added by MakeMaker)

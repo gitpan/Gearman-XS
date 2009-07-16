@@ -15,16 +15,17 @@ use FindBin qw( $Bin );
 use lib ("$Bin/lib", "$Bin/../lib");
 use TestLib;
 
-plan tests => 94;
+plan tests => 106;
 
 my ($ret, $result, $job_handle, $task);
 
 my $completed = 0;
 my $failed    = 0;
+my $warnings  = 0;
 my $numerator = 0;
 
 SKIP: {
-  skip('Set $ENV{GEARMAN_LIVE_TEST} to run this test', 94)
+  skip('Set $ENV{GEARMAN_LIVE_TEST} to run this test', 106)
     if !$ENV{GEARMAN_LIVE_TEST};
 
   # client
@@ -133,19 +134,30 @@ SKIP: {
   is($task->numerator(), 0);
   is($task->denominator(), 0);
 
+  # test warning callback
+  ($ret, $task) = $client->add_task("warning", "I'll be dead");
+  is($ret, GEARMAN_SUCCESS);
+  isa_ok($task, 'Gearman::XS::Task');
+
   # callback functions
   $client->set_created_fn(\&created_cb);
   $client->set_data_fn(\&data_cb);
   $client->set_complete_fn(\&completed_cb);
   $client->set_fail_fn(\&fail_cb);
   $client->set_status_fn(\&status_cb);
+  $client->set_warning_fn(\&warning_cb);
 
   # run concurrent tasks
   is($client->run_tasks(), GEARMAN_SUCCESS);
 
   # check callback results
-  is($completed, 4);
+  is($completed, 5);
   is($failed, 2);
+  is($warnings, 1);
+
+  ($ret, $result) = $client->do("complete", 'blubb');
+  is($ret, GEARMAN_SUCCESS);
+  is($result, 'blubb');
 }
 
 sub created_cb {
@@ -196,6 +208,17 @@ sub status_cb {
   is($task->function(), "status");
   is($task->denominator(), 4);
   is($task->numerator(), ++$numerator);
+
+  return GEARMAN_SUCCESS;
+}
+
+sub warning_cb {
+  my ($task) = @_;
+
+  like($task->job_handle(), qr/H:.+:.+/);
+  is($task->function(), "warning");
+
+  $warnings++;
 
   return GEARMAN_SUCCESS;
 }

@@ -15,13 +15,13 @@ use FindBin qw( $Bin );
 use lib ("$Bin/lib", "$Bin/../lib");
 use TestLib;
 
-plan tests => 42;
+plan tests => 49;
 
 my ($ret, $job_handle);
 my @handles = ();
 
 SKIP: {
-  skip('Set $ENV{GEARMAN_LIVE_TEST} to run this test', 42)
+  skip('Set $ENV{GEARMAN_LIVE_TEST} to run this test', 49)
     if !$ENV{GEARMAN_LIVE_TEST};
 
   # client
@@ -76,6 +76,17 @@ SKIP: {
   {
     is($worker->work(), GEARMAN_SUCCESS);
   }
+
+  ($ret, $job_handle) = $client->do_background("reverse", 'blubb');
+  my $job;
+  ($ret, $job) = $worker->grab_job();
+  is($ret, GEARMAN_SUCCESS);
+  isa_ok($job, 'Gearman::XS::Job');
+  is($job->handle(), $job_handle);
+  is($job->workload(), 'blubb');
+  is($job->function_name(), 'reverse');
+  is($job->warning('aarg'), GEARMAN_SUCCESS);
+  is($job->complete(reverse($job->workload())), GEARMAN_SUCCESS);
 }
 
 sub reverse {
