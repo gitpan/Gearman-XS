@@ -8,9 +8,15 @@
 
 package Gearman::XS::Worker;
 
-our $VERSION= '0.4';
+use strict;
+use warnings;
+
+our $VERSION= '0.4_01';
 
 use Gearman::XS;
+
+1;
+__END__
 
 =head1 NAME
 
@@ -126,10 +132,13 @@ at your option, any later version of Perl 5 you may have available.
 
 This is free software. IT COMES WITHOUT WARRANTY OF ANY KIND.
 
-=head1 AUTHORS
+=head1 LICENSE
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
+
+=head1 AUTHOR
 
 Dennis Schoen <dennis@blogma.de>
 
 =cut
-
-1;

@@ -1,4 +1,4 @@
-Gearman::XS version 0.2
+Gearman::XS version 0.4_01
 ==============================
 
 This is a Perl front end for the Gearman C library. It aims to provide a
@@ -12,6 +12,12 @@ To install this module type the following:
   make
   make test
   make install
+
+OPTIONAL: If you installed libgearman in a non-standard location, you can set
+the GEARMAN_INCLUDE and GEARMAN_LIB environment variables:
+
+  export GEARMAN_INCLUDE=/opt/gearmand/include
+  export GEARMAN_LIB=/opt/gearmand/lib
 
 To run the complete testsuite make sure you have 'gearmand' in your PATH and
 type:

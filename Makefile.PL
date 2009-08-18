@@ -1,11 +1,39 @@
-use 5.006000;
-use ExtUtils::MakeMaker;
+use inc::Module::Install;
+use Env qw(GEARMAN_LIB GEARMAN_INCLUDE);
+use vars qw($INCLUDES);
 
-WriteMakefile(
-  NAME          => 'Gearman::XS',
-  VERSION_FROM  => 'lib/Gearman/XS.pm',
-  PREREQ_PM     => {'Test::More' => 0, 'Storable' => 0},
-  ABSTRACT      => 'This is a Perl front end for the Gearman C library. It aims to provide a simple interface closely tied to the C library',
-  AUTHOR        => 'Dennis Schoen <dennis@blogma.de>',
-  LIBS          => ['-lgearman'],
+my $LIBS = '';
+$INCLUDES = '-I.';
+
+if (defined $GEARMAN_LIB) {
+  print STDERR "Using GEARMAN_LIB = $GEARMAN_LIB\n";
+  $LIBS .= " -L$GEARMAN_LIB ";
+}
+
+if (defined $GEARMAN_INCLUDE) {
+  print STDERR "Using GEARMAN_INCLUDE = $GEARMAN_INCLUDE\n";
+  $INCLUDES .= " -I$GEARMAN_INCLUDE";
+}
+
+$LIBS .= ' -lgearman';
+
+name 'Gearman-XS';
+all_from 'lib/Gearman/XS.pm';
+no_index directory => 'examples';
+
+can_cc or die "This module requires a C compiler";
+
+makemaker_args(
+    OBJECT  => '$(O_FILES)',
+    INC     => $INCLUDES,
+    LIBS    => $LIBS,
 );
+
+cc_files map { "$_\.c" } qw/XS/;
+tests 't/*.t';
+
+test_requires 'Test::More';
+test_requires 'Storable';
+use_test_base;
+auto_include;
+WriteAll;

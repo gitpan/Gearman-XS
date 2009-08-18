@@ -66,6 +66,11 @@ $client->set_fail_fn(\&fail_cb);
 $client->set_status_fn(\&status_cb);
 
 $ret= $client->run_tasks();
+if ($ret != GEARMAN_SUCCESS)
+{
+  printf(STDERR "%s\n", $client->error());
+  exit(1);
+}
 
 exit;
 

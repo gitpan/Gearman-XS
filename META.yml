@@ -1,21 +1,27 @@
---- #YAML:1.0
-name:               Gearman-XS
-version:            0.4
-abstract:           This is a Perl front end for the Gearman C library. It aims to provide a simple interface closely tied to the C library
+---
+abstract: 'Perl front end for the Gearman C library.'
 author:
-    - Dennis Schoen <dennis@blogma.de>
-license:            unknown
-distribution_type:  module
+  - 'Dennis Schoen'
+build_requires:
+  ExtUtils::MakeMaker: 6.42
+  Storable: 0
+  Test::More: 0
 configure_requires:
-    ExtUtils::MakeMaker:  0
-requires:
-    Storable:    0
-    Test::More:  0
-no_index:
-    directory:
-        - t
-        - inc
-generated_by:       ExtUtils::MakeMaker version 6.48
+  ExtUtils::MakeMaker: 6.42
+distribution_type: module
+generated_by: 'Module::Install version 0.91'
+license: perl
 meta-spec:
-    url:      http://module-build.sourceforge.net/META-spec-v1.4.html
-    version:  1.4
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+name: Gearman-XS
+no_index:
+  directory:
+    - examples
+    - inc
+    - t
+requires:
+  perl: 5.6.0
+resources:
+  license: http://dev.perl.org/licenses/
+version: 0.4_01

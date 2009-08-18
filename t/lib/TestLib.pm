@@ -41,7 +41,7 @@ sub run_test_worker {
     die "cannot fork: $!"
       if (!defined $self->{test_worker_pid});
     $|++;
-    my @cmd = ("$Bin/test_worker.pl");
+    my @cmd = ($^X, "$Bin/test_worker.pl");
     exec(@cmd)
       or die("Could not exec $Bin/test_worker.pl");
     exit;

@@ -28,6 +28,7 @@ $worker->add_function("add", 0, \&add, '');
 $worker->add_function("quit", 0, \&quit, '');
 $worker->add_function("complete", 0, \&complete, '');
 $worker->add_function("warning", 0, \&warning, '');
+$worker->add_function("undef_return", 0, \&undef_return, '');
 
 while (1)
 {
@@ -82,6 +83,8 @@ sub warning {
   my ($job) = @_;
 
   $job->warning("argh");
+
+  return($job->workload());
 }
 
 sub add {
@@ -122,5 +125,9 @@ sub complete {
   my ($job) = @_;
 
   $job->complete($job->workload());
+}
+
+sub undef_return {
+  my ($job) = @_;
   return;
 }
