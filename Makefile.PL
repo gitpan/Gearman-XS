@@ -27,6 +27,11 @@ makemaker_args(
     OBJECT  => '$(O_FILES)',
     INC     => $INCLUDES,
     LIBS    => $LIBS,
+    clean   => {
+        FILES => q{
+            MANIFEST
+        },
+    },
 );
 
 cc_files map { "$_\.c" } qw/XS/;
@@ -35,5 +40,5 @@ tests 't/*.t';
 test_requires 'Test::More';
 test_requires 'Storable';
 use_test_base;
-auto_include;
+auto_install;
 WriteAll;

@@ -5,7 +5,9 @@ examples/reverse_client.pl
 examples/reverse_client_bg.pl
 examples/reverse_client_cb.pl
 examples/reverse_worker.pl
+inc/Module/AutoInstall.pm
 inc/Module/Install.pm
+inc/Module/Install/AutoInstall.pm
 inc/Module/Install/Base.pm
 inc/Module/Install/Can.pm
 inc/Module/Install/Compiler.pm
@@ -15,8 +17,6 @@ inc/Module/Install/Makefile.pm
 inc/Module/Install/Metadata.pm
 inc/Module/Install/Win32.pm
 inc/Module/Install/WriteAll.pm
-inc/Storable.pm
-inc/Test/More.pm
 lib/Gearman/XS.pm
 lib/Gearman/XS/Client.pm
 lib/Gearman/XS/Job.pm

@@ -1,4 +1,4 @@
-0.4_02 -
+0.4_03 -
  * extend makefile to support custom libgearman locations
  * fix client hanging if worker functions return undef
  * use Module::Install as Installer
