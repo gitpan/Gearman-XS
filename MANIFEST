@@ -1,10 +1,13 @@
 Changes
+Client.xs
+Const.xs
 examples/echo_client.pl
 examples/echo_worker.pl
 examples/reverse_client.pl
 examples/reverse_client_bg.pl
 examples/reverse_client_cb.pl
 examples/reverse_worker.pl
+gearman_xs.h
 inc/Module/AutoInstall.pm
 inc/Module/Install.pm
 inc/Module/Install/AutoInstall.pm
@@ -17,6 +20,7 @@ inc/Module/Install/Makefile.pm
 inc/Module/Install/Metadata.pm
 inc/Module/Install/Win32.pm
 inc/Module/Install/WriteAll.pm
+Job.xs
 lib/Gearman/XS.pm
 lib/Gearman/XS/Client.pm
 lib/Gearman/XS/Job.pm
@@ -36,5 +40,7 @@ t/99-perlcritic.t
 t/lib/TestLib.pm
 t/perlcriticrc
 t/test_worker.pl
+Task.xs
 typemap
+Worker.xs
 XS.xs

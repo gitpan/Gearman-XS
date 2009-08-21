@@ -9,10 +9,12 @@
 use strict;
 use warnings;
 
-use Test::More tests => 19;
+use Test::More tests => 20;
 
 # import constants
 use Gearman::XS qw(:constants);
+
+my ($ret, $job, $job_handle);
 
 # test some constants
 is(GEARMAN_SUCCESS, 0);
@@ -51,10 +53,12 @@ $worker->add_server('213.3.4.5', 61333);
 
 # no functions
 is($worker->work(), GEARMAN_NO_REGISTERED_FUNCTIONS);
-is($worker->grab_job(), GEARMAN_NO_REGISTERED_FUNCTIONS);
+($ret, $job) = $worker->grab_job();
+is($ret, GEARMAN_NO_REGISTERED_FUNCTIONS);
+is($job, undef);
 
 # no connection
-my ($ret, $job_handle) = $client->do_background("reverse", 'do background', 'unique');
+($ret, $job_handle) = $client->do_background("reverse", 'do background', 'unique');
 is($ret, GEARMAN_COULD_NOT_CONNECT);
 is($job_handle, undef);
 is($client->error(), 'gearman_con_flush:could not connect');

@@ -34,7 +34,7 @@ makemaker_args(
     },
 );
 
-cc_files map { "$_\.c" } qw/XS/;
+cc_files map { "$_\.c" } qw/XS Const Client Worker Job Task/;
 tests 't/*.t';
 
 test_requires 'Test::More';

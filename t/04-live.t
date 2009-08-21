@@ -15,7 +15,7 @@ use FindBin qw( $Bin );
 use lib ("$Bin/lib", "$Bin/../lib");
 use TestLib;
 
-plan tests => 112;
+plan tests => 114;
 
 my ($ret, $result, $job_handle, $task);
 
@@ -25,7 +25,7 @@ my $warnings  = 0;
 my $numerator = 0;
 
 SKIP: {
-  skip('Set $ENV{GEARMAN_LIVE_TEST} to run this test', 112)
+  skip('Set $ENV{GEARMAN_LIVE_TEST} to run this test', 114)
     if !$ENV{GEARMAN_LIVE_TEST};
 
   # client
@@ -169,6 +169,10 @@ SKIP: {
   ($ret, $result) = $client->do('warning', 'blubb');
   is($ret, GEARMAN_SUCCESS);
   is($result, 'blubb');
+
+  ($ret, $result) = $client->do('fail', 'blubb');
+  is($ret, GEARMAN_WORK_FAIL);
+  is($result, undef);
 }
 
 sub created_cb {

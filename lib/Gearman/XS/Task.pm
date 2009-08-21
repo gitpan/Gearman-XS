@@ -11,7 +11,7 @@ package Gearman::XS::Task;
 use strict;
 use warnings;
 
-our $VERSION= '0.4_03';
+our $VERSION= '0.4_04';
 
 use Gearman::XS;
 
