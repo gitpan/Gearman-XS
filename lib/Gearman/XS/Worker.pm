@@ -11,7 +11,7 @@ package Gearman::XS::Worker;
 use strict;
 use warnings;
 
-our $VERSION= '0.4_04';
+our $VERSION= '0.5';
 
 use Gearman::XS;
 
