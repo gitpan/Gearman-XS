@@ -11,7 +11,7 @@ package Gearman::XS::Client;
 use strict;
 use warnings;
 
-our $VERSION= '0.5';
+our $VERSION= '0.6_01';
 
 use Gearman::XS;
 
@@ -81,6 +81,31 @@ Returns a standard gearman return value.
 Add a list of job servers to a client. The format for the server list is:
 SERVER[:PORT][,SERVER[:PORT]]... No socket I/O happens here, it is just added
 to a list. Returns a standard gearman return value.
+
+=head2 $client->options()
+
+Get options for a client.
+
+=head2 $client->set_options($options)
+
+Set options for a client.
+
+=head2 $client->add_options($options)
+
+Add options for a client.
+
+=head2 $client->remove_options($options)
+
+Remove options for a client.
+
+=head2 $client->timeout()
+
+Get current socket I/O activity timeout value. Returns Timeout in milliseconds
+to wait for I/O activity.
+
+=head2 $client->set_timeout($timeout)
+
+Set socket I/O activity timeout for connections in milliseconds.
 
 =head2 $client->echo($data)
 
@@ -154,6 +179,12 @@ Add a low priority background task to be run in parallel and return a list
 with two entries: the first is a standard gearman return value, the second is a
 Gearman::XS::Task object.
 
+=head2 $client->add_task_status($job_handle)
+
+Add task to get the status for a background task in parallel and return a list
+with two entries: the first is a standard gearman return value, the second is a
+Gearman::XS::Task object.
+
 =head2 $client->run_tasks()
 
 Run tasks that have been added in parallel. Returns a standard gearman return
@@ -198,6 +229,14 @@ numerator and denominator.
 Get the status for a background job. Returns a list with 5 entries: standard
 gearman return value, boolean indicating the know status, boolean indicating
 the running status, and the precent complete numerator and denominator.
+
+=head2 $client->wait()
+
+When in non-blocking I/O mode, wait for activity from one of the servers.
+
+=head2 $client->clear_fn()
+
+Clear all task callback functions.
 
 =head1 CALLBACKS
 

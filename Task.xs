@@ -40,10 +40,10 @@ data_size(self)
     RETVAL
 
 const char *
-function(self)
+function_name(self)
     gearman_xs_task *self
   CODE:
-    RETVAL= gearman_task_function(self);
+    RETVAL= gearman_task_function_name(self);
   OUTPUT:
     RETVAL
 
@@ -64,9 +64,28 @@ denominator(self)
     RETVAL
 
 const char *
-uuid(self)
+unique(self)
     gearman_xs_task *self
   CODE:
-    RETVAL= gearman_task_uuid(self);
+    RETVAL= gearman_task_unique(self);
   OUTPUT:
     RETVAL
+
+void
+is_known(self)
+    gearman_xs_task *self
+  PPCODE:
+    if (gearman_task_is_known(self))
+      XSRETURN_YES;
+    else
+      XSRETURN_NO;
+
+void
+is_running(self)
+    gearman_xs_task *self
+  PPCODE:
+    if (gearman_task_is_running(self))
+      XSRETURN_YES;
+    else
+      XSRETURN_NO;
+  

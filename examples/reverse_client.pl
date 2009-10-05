@@ -22,14 +22,15 @@ use Gearman::XS qw(:constants);
 use Gearman::XS::Client;
 
 my %opts;
-if (!getopts('h:p:', \%opts))
+if (!getopts('h:p:t:', \%opts))
 {
   usage();
   exit(1);
 }
 
-my $host= $opts{h} || '';
-my $port= $opts{p} || 0;
+my $host= $opts{h}    || '';
+my $port= $opts{p}    || 0;
+my $timeout= $opts{t} || -1;
 
 if (scalar @ARGV < 1)
 {
@@ -38,6 +39,11 @@ if (scalar @ARGV < 1)
 }
 
 my $client= new Gearman::XS::Client;
+
+if ($timeout >= 0)
+{
+  $client->set_timeout($timeout);
+}
 
 my $ret = $client->add_server($host, $port);
 if ($ret != GEARMAN_SUCCESS)
@@ -86,6 +92,7 @@ exit;
 
 sub usage {
   printf("\nusage: $0 [-h <host>] [-p <port>] <string>\n");
-  printf("\t-h <host> - job server host\n");
-  printf("\t-p <port> - job server port\n");
+  printf("\t-h <host>    - job server host\n");
+  printf("\t-p <port>    - job server port\n");
+  printf("\t-t <timeout> - timeout in milliseconds\n");
 }

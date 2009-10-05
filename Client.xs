@@ -11,7 +11,7 @@
 
 typedef enum {
   TASK_FN_ARG_CREATED= (1 << 0)
-} gearman_task_fn_arg_st_flags;
+} gearman_task_context_st_flags;
 
 typedef struct gearman_xs_client {
   gearman_client_st *client;
@@ -24,23 +24,23 @@ typedef struct gearman_xs_client {
   SV * warning_fn;
 } gearman_xs_client;
 
-/* client task fn_arg */
+/* client task context */
 typedef struct
 {
-  gearman_task_fn_arg_st_flags flags;
+  gearman_task_context_st_flags flags;
   gearman_client_st *client;
   const char *workload;
-} gearman_task_fn_arg_st;
+} gearman_task_context_st;
 
 
-/* fn_arg free function to free() the workload */
-void _perl_task_free(gearman_task_st *task, void *fn_arg)
+/* context free function to free() the workload */
+void _perl_task_free(gearman_task_st *task, void *context)
 {
-  gearman_task_fn_arg_st *fn_arg_st= (gearman_task_fn_arg_st *)fn_arg;
-  if (fn_arg_st->flags == TASK_FN_ARG_CREATED)
+  gearman_task_context_st *context_st= (gearman_task_context_st *)context;
+  if (context_st->flags == TASK_FN_ARG_CREATED)
   {
-    Safefree(fn_arg_st->workload);
-    Safefree(fn_arg_st);
+    Safefree(context_st->workload);
+    Safefree(context_st);
   }
 }
 
@@ -75,66 +75,66 @@ static gearman_return_t _perl_task_callback(SV * fn, gearman_task_st *task)
 
 static gearman_return_t _perl_task_complete_fn(gearman_task_st *task)
 {
-  gearman_task_fn_arg_st *fn_arg_st;
+  gearman_task_context_st *context_st;
   gearman_xs_client *self;
 
-  fn_arg_st= (gearman_task_fn_arg_st *)gearman_task_fn_arg(task);
-  self= (gearman_xs_client *)gearman_client_data(fn_arg_st->client);
+  context_st= (gearman_task_context_st *)gearman_task_context(task);
+  self= (gearman_xs_client *)gearman_client_context(context_st->client);
 
   return _perl_task_callback(self->complete_fn, task);
 }
 
 static gearman_return_t _perl_task_fail_fn(gearman_task_st *task)
 {
-  gearman_task_fn_arg_st *fn_arg_st;
+  gearman_task_context_st *context_st;
   gearman_xs_client *self;
 
-  fn_arg_st= (gearman_task_fn_arg_st *)gearman_task_fn_arg(task);
-  self= (gearman_xs_client *)gearman_client_data(fn_arg_st->client);
+  context_st= (gearman_task_context_st *)gearman_task_context(task);
+  self= (gearman_xs_client *)gearman_client_context(context_st->client);
 
   return _perl_task_callback(self->fail_fn, task);
 }
 
 static gearman_return_t _perl_task_status_fn(gearman_task_st *task)
 {
-  gearman_task_fn_arg_st *fn_arg_st;
+  gearman_task_context_st *context_st;
   gearman_xs_client *self;
 
-  fn_arg_st= (gearman_task_fn_arg_st *)gearman_task_fn_arg(task);
-  self= (gearman_xs_client *)gearman_client_data(fn_arg_st->client);
+  context_st= (gearman_task_context_st *)gearman_task_context(task);
+  self= (gearman_xs_client *)gearman_client_context(context_st->client);
 
   return _perl_task_callback(self->status_fn, task);
 }
 
 static gearman_return_t _perl_task_created_fn(gearman_task_st *task)
 {
-  gearman_task_fn_arg_st *fn_arg_st;
+  gearman_task_context_st *context_st;
   gearman_xs_client *self;
 
-  fn_arg_st= (gearman_task_fn_arg_st *)gearman_task_fn_arg(task);
-  self= (gearman_xs_client *)gearman_client_data(fn_arg_st->client);
+  context_st= (gearman_task_context_st *)gearman_task_context(task);
+  self= (gearman_xs_client *)gearman_client_context(context_st->client);
 
   return _perl_task_callback(self->created_fn, task);
 }
 
 static gearman_return_t _perl_task_data_fn(gearman_task_st *task)
 {
-  gearman_task_fn_arg_st *fn_arg_st;
+  gearman_task_context_st *context_st;
   gearman_xs_client *self;
 
-  fn_arg_st= (gearman_task_fn_arg_st *)gearman_task_fn_arg(task);
-  self= (gearman_xs_client *)gearman_client_data(fn_arg_st->client);
+  context_st= (gearman_task_context_st *)gearman_task_context(task);
+  self= (gearman_xs_client *)gearman_client_context(context_st->client);
 
   return _perl_task_callback(self->data_fn, task);
 }
 
 static gearman_return_t _perl_task_warning_fn(gearman_task_st *task)
 {
-  gearman_task_fn_arg_st *fn_arg_st;
+  gearman_task_context_st *context_st;
   gearman_xs_client *self;
 
-  fn_arg_st= (gearman_task_fn_arg_st *)gearman_task_fn_arg(task);
-  self= (gearman_xs_client *)gearman_client_data(fn_arg_st->client);
+  context_st= (gearman_task_context_st *)gearman_task_context(task);
+  self= (gearman_xs_client *)gearman_client_context(context_st->client);
 
   return _perl_task_callback(self->warning_fn, task);
 }
@@ -148,11 +148,11 @@ SV* _create_client() {
       Perl_croak(aTHX_ "gearman_client_create:NULL\n");
   }
 
-  gearman_client_set_data(self->client, self);
-  gearman_client_set_options(self->client, GEARMAN_CLIENT_FREE_TASKS, 1);
-  gearman_client_set_workload_malloc(self->client, _perl_malloc, NULL);
-  gearman_client_set_workload_free(self->client, _perl_free, NULL);
-  gearman_client_set_task_fn_arg_free(self->client, _perl_task_free);
+  gearman_client_set_context(self->client, self);
+  gearman_client_add_options(self->client, GEARMAN_CLIENT_FREE_TASKS);
+  gearman_client_set_workload_malloc_fn(self->client, _perl_malloc, NULL);
+  gearman_client_set_workload_free_fn(self->client, _perl_free, NULL);
+  gearman_client_set_task_context_free_fn(self->client, _perl_task_free);
 
   return _bless("Gearman::XS::Client", self);
 }
@@ -195,6 +195,35 @@ add_servers(self, servers)
     RETVAL= gearman_client_add_servers(self->client, servers);
   OUTPUT:
     RETVAL
+
+gearman_client_options_t
+options(self)
+    gearman_xs_client *self
+  CODE:
+    RETVAL= gearman_client_options(self->client);
+  OUTPUT:
+    RETVAL
+
+void
+set_options(self, options)
+    gearman_xs_client *self
+    gearman_client_options_t options
+  CODE:
+    gearman_client_set_options(self->client, options);
+
+void
+add_options(self, options)
+    gearman_xs_client *self
+    gearman_client_options_t options
+  CODE:
+    gearman_client_add_options(self->client, options);
+
+void
+remove_options(self, options)
+    gearman_xs_client *self
+    gearman_client_options_t options
+  CODE:
+    gearman_client_remove_options(self->client, options);
 
 gearman_return_t
 echo(self, workload)
@@ -365,18 +394,18 @@ add_task(self, function_name, workload, ...)
     gearman_task_st *task;
     const char *unique= NULL;
     gearman_return_t ret;
-    gearman_task_fn_arg_st *fn_arg;
+    gearman_task_context_st *context;
     const char *w;
   PPCODE:
     if (items > 3)
       unique= (char *)SvPV(ST(3), PL_na);
     w= savesvpv(workload);
-    Newxz(fn_arg, 1, gearman_task_fn_arg_st);
-    fn_arg->flags= TASK_FN_ARG_CREATED;
-    fn_arg->client= self->client;
-    fn_arg->workload= w;
-    task= gearman_client_add_task(self->client, NULL, fn_arg, function_name, unique, w,
-                                  SvCUR(workload), &ret);
+    Newxz(context, 1, gearman_task_context_st);
+    context->flags= TASK_FN_ARG_CREATED;
+    context->client= self->client;
+    context->workload= w;
+    task= gearman_client_add_task(self->client, NULL, context, function_name,
+                                  unique, w, SvCUR(workload), &ret);
 
     XPUSHs(sv_2mortal(newSViv(ret)));
     XPUSHs(_bless("Gearman::XS::Task", task));
@@ -390,18 +419,19 @@ add_task_high(self, function_name, workload, ...)
     gearman_task_st *task;
     const char *unique= NULL;
     gearman_return_t ret;
-    gearman_task_fn_arg_st *fn_arg;
+    gearman_task_context_st *context;
     const char *w;
   PPCODE:
     if (items > 3)
       unique= (char *)SvPV(ST(3), PL_na);
     w= savesvpv(workload);
-    Newxz(fn_arg, 1, gearman_task_fn_arg_st);
-    fn_arg->flags= TASK_FN_ARG_CREATED;
-    fn_arg->client= self->client;
-    fn_arg->workload= w;
-    task= gearman_client_add_task_high(self->client, NULL, fn_arg, function_name,
-                                       unique, w, SvCUR(workload), &ret);
+    Newxz(context, 1, gearman_task_context_st);
+    context->flags= TASK_FN_ARG_CREATED;
+    context->client= self->client;
+    context->workload= w;
+    task= gearman_client_add_task_high(self->client, NULL, context,
+                                       function_name, unique, w,
+                                       SvCUR(workload), &ret);
 
     XPUSHs(sv_2mortal(newSViv(ret)));
     XPUSHs(_bless("Gearman::XS::Task", task));
@@ -415,18 +445,19 @@ add_task_low(self, function_name, workload, ...)
     gearman_task_st *task;
     const char *unique= NULL;
     gearman_return_t ret;
-    gearman_task_fn_arg_st *fn_arg;
+    gearman_task_context_st *context;
     const char *w;
   PPCODE:
     if (items > 3)
       unique= (char *)SvPV(ST(3), PL_na);
     w= savesvpv(workload);
-    Newxz(fn_arg, 1, gearman_task_fn_arg_st);
-    fn_arg->flags= TASK_FN_ARG_CREATED;
-    fn_arg->client= self->client;
-    fn_arg->workload= w;
-    task= gearman_client_add_task_low(self->client, NULL, fn_arg, function_name,
-                                      unique, w, SvCUR(workload), &ret);
+    Newxz(context, 1, gearman_task_context_st);
+    context->flags= TASK_FN_ARG_CREATED;
+    context->client= self->client;
+    context->workload= w;
+    task= gearman_client_add_task_low(self->client, NULL, context,
+                                      function_name, unique, w,
+                                      SvCUR(workload), &ret);
 
     XPUSHs(sv_2mortal(newSViv(ret)));
     XPUSHs(_bless("Gearman::XS::Task", task));
@@ -440,18 +471,19 @@ add_task_background(self, function_name, workload, ...)
     gearman_task_st *task;
     const char *unique= NULL;
     gearman_return_t ret;
-    gearman_task_fn_arg_st *fn_arg;
+    gearman_task_context_st *context;
     const char *w;
   PPCODE:
     if (items > 3)
       unique= (char *)SvPV(ST(3), PL_na);
     w= savesvpv(workload);
-    Newxz(fn_arg, 1, gearman_task_fn_arg_st);
-    fn_arg->flags= TASK_FN_ARG_CREATED;
-    fn_arg->client= self->client;
-    fn_arg->workload= w;
-    task= gearman_client_add_task_background(self->client, NULL, fn_arg, function_name,
-                                             unique, w, SvCUR(workload), &ret);
+    Newxz(context, 1, gearman_task_context_st);
+    context->flags= TASK_FN_ARG_CREATED;
+    context->client= self->client;
+    context->workload= w;
+    task= gearman_client_add_task_background(self->client, NULL, context,
+                                             function_name, unique, w,
+                                             SvCUR(workload), &ret);
 
     XPUSHs(sv_2mortal(newSViv(ret)));
     XPUSHs(_bless("Gearman::XS::Task", task));
@@ -465,17 +497,17 @@ add_task_high_background(self, function_name, workload, ...)
     gearman_task_st *task;
     const char *unique= NULL;
     gearman_return_t ret;
-    gearman_task_fn_arg_st *fn_arg;
+    gearman_task_context_st *context;
     const char *w;
   PPCODE:
     if (items > 3)
       unique= (char *)SvPV(ST(3), PL_na);
     w= savesvpv(workload);
-    Newxz(fn_arg, 1, gearman_task_fn_arg_st);
-    fn_arg->flags= TASK_FN_ARG_CREATED;
-    fn_arg->client= self->client;
-    fn_arg->workload= w;
-    task= gearman_client_add_task_high_background(self->client, NULL, fn_arg,
+    Newxz(context, 1, gearman_task_context_st);
+    context->flags= TASK_FN_ARG_CREATED;
+    context->client= self->client;
+    context->workload= w;
+    task= gearman_client_add_task_high_background(self->client, NULL, context,
                                                   function_name, unique, w,
                                                   SvCUR(workload), &ret);
 
@@ -491,17 +523,17 @@ add_task_low_background(self, function_name, workload, ...)
     gearman_task_st *task;
     const char *unique= NULL;
     gearman_return_t ret;
-    gearman_task_fn_arg_st *fn_arg;
+    gearman_task_context_st *context;
     const char *w;
   PPCODE:
     if (items > 3)
       unique= (char *)SvPV(ST(3), PL_na);
     w= savesvpv(workload);
-    Newxz(fn_arg, 1, gearman_task_fn_arg_st);
-    fn_arg->flags= TASK_FN_ARG_CREATED;
-    fn_arg->client= self->client;
-    fn_arg->workload= w;
-    task= gearman_client_add_task_low_background(self->client, NULL, fn_arg,
+    Newxz(context, 1, gearman_task_context_st);
+    context->flags= TASK_FN_ARG_CREATED;
+    context->client= self->client;
+    context->workload= w;
+    task= gearman_client_add_task_low_background(self->client, NULL, context,
                                                  function_name, unique, w,
                                                  SvCUR(workload), &ret);
 
@@ -601,6 +633,51 @@ job_status(self, job_handle="")
     XPUSHs(sv_2mortal(newSViv(is_running)));
     XPUSHs(sv_2mortal(newSVuv(numerator)));
     XPUSHs(sv_2mortal(newSVuv(denominator)));
+
+int
+timeout(self)
+    gearman_xs_client *self
+  CODE:
+    RETVAL= gearman_client_timeout(self->client);
+  OUTPUT:
+    RETVAL
+
+void
+set_timeout(self, timeout)
+    gearman_xs_client *self
+    int timeout
+  CODE:
+    gearman_client_set_timeout(self->client, timeout);
+
+gearman_return_t
+wait(self)
+    gearman_xs_client *self
+  CODE:
+    RETVAL= gearman_client_wait(self->client);
+  OUTPUT:
+    RETVAL
+
+void
+add_task_status(self, job_handle)
+    gearman_xs_client *self
+    const char *job_handle
+  PREINIT:
+    gearman_task_st *task;
+    gearman_return_t ret;
+    gearman_task_context_st *context;
+  PPCODE:
+    Newxz(context, 1, gearman_task_context_st);
+    context->flags= TASK_FN_ARG_CREATED;
+    context->client= self->client;
+    task= gearman_client_add_task_status(self->client, NULL, context, job_handle, &ret);
+    XPUSHs(sv_2mortal(newSViv(ret)));
+    XPUSHs(_bless("Gearman::XS::Task", task));
+
+void
+clear_fn(self)
+    gearman_xs_client *self
+  CODE:
+    gearman_client_clear_fn(self->client);
 
 void
 DESTROY(self)

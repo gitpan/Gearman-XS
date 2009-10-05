@@ -15,17 +15,20 @@ use FindBin qw( $Bin );
 use lib ("$Bin/lib", "$Bin/../lib");
 use TestLib;
 
-plan tests => 114;
+plan tests => 154;
 
 my ($ret, $result, $job_handle, $task);
 
+my $created   = 0;
 my $completed = 0;
 my $failed    = 0;
 my $warnings  = 0;
 my $numerator = 0;
+my $data      = 0;
+my $tasks     = 0;
 
 SKIP: {
-  skip('Set $ENV{GEARMAN_LIVE_TEST} to run this test', 114)
+  skip('Set $ENV{GEARMAN_LIVE_TEST} to run this test', 154)
     if !$ENV{GEARMAN_LIVE_TEST};
 
   # client
@@ -133,6 +136,7 @@ SKIP: {
   isa_ok($task, 'Gearman::XS::Task');
   is($task->numerator(), 0);
   is($task->denominator(), 0);
+  like($task->unique(), qr/\w+-\w+-\w+-\w+-\w+/);
 
   # test warning callback
   ($ret, $task) = $client->add_task("warning", "I'll be dead");
@@ -151,9 +155,23 @@ SKIP: {
   is($client->run_tasks(), GEARMAN_SUCCESS);
 
   # check callback results
+  is($created, 10);
   is($completed, 5);
   is($failed, 2);
   is($warnings, 1);
+  is($data, 1);
+  is($numerator, 4);
+
+  # test clear_fn() really clears callback
+  $client->clear_fn();
+  ($ret, $task) = $client->add_task("reverse", 'normal');
+  is($client->run_tasks(), GEARMAN_SUCCESS);
+  is($created, 10);
+  is($completed, 5);
+  is($failed, 2);
+  is($warnings, 1);
+  is($data, 1);
+  is($numerator, 4);
 
   ($ret, $result) = $client->do("undef_return", 'blah');
   is($ret, GEARMAN_SUCCESS);
@@ -173,12 +191,77 @@ SKIP: {
   ($ret, $result) = $client->do('fail', 'blubb');
   is($ret, GEARMAN_WORK_FAIL);
   is($result, undef);
+
+  $client= new Gearman::XS::Client;
+  $client->add_server('127.0.0.1', 4731);
+
+  # You can turn off auto task destruction by unsetting this flag on a gearman client.
+  $client->remove_options(GEARMAN_CLIENT_FREE_TASKS);
+
+  ($ret, $job_handle) = $client->do_background("status", "blubb");
+  is($ret, GEARMAN_SUCCESS);
+
+  ($ret, $task) = $client->add_task_status($job_handle);
+  is($ret, GEARMAN_SUCCESS);
+  isa_ok($task, 'Gearman::XS::Task');
+
+  is($task->is_known(), '');
+  is($task->is_running(), '');
+
+  is($client->run_tasks(), GEARMAN_SUCCESS);
+
+  is($task->is_known(),1 );
+  is($task->is_running(), 1);
+
+  # test timeout
+  $client->set_timeout(1000); # 1 second
+  ($ret, $result) = $client->do("wait_two_seconds", 'blubb');
+  is($ret, GEARMAN_TIMEOUT);
+  is($result, undef);
+  $client->set_timeout(-1); # infinite
+
+  $client= new Gearman::XS::Client;
+  $client->add_server('127.0.0.1', 4731);
+  $client->add_options(GEARMAN_CLIENT_NON_BLOCKING);
+
+  $tasks= 2;
+  $client->add_task("reverse", 'hello');
+  $client->add_task("reverse", 'world');
+
+  $client->set_created_fn(\&created_cb);
+  $client->set_complete_fn(\&completed_cb);
+
+  # This while loop should be replaced with $client->send_tasks();
+  while (1)
+  {
+    my $ret = $client->run_tasks();
+    if ($ret == GEARMAN_SUCCESS || $tasks <= 0)
+    {
+      last;
+    }
+    is($client->wait(), GEARMAN_SUCCESS);
+  }
+  is($created, 12);
+  is($completed, 5);
+  
+  # jobs have been sent, do something else here...
+  sleep(2);
+
+  # now block for results
+  $client->remove_options(GEARMAN_CLIENT_NON_BLOCKING);
+  is($client->run_tasks(), GEARMAN_SUCCESS);
+
+  is($created, 12);
+  is($completed, 7);
 }
 
 sub created_cb {
   my ($task) = @_;
 
   like($task->job_handle(), qr/H:.+:.+/);
+
+  $created++;
+  $tasks--;
 
   return GEARMAN_SUCCESS;
 }
@@ -187,7 +270,9 @@ sub data_cb {
   my ($task) = @_;
 
   like($task->job_handle(), qr/H:.+:.+/);
-  like($task->data(), qr/\w+/);
+  is($task->data(), 'test data');
+
+  $data++;
 
   return GEARMAN_SUCCESS;
 }
@@ -198,7 +283,7 @@ sub completed_cb {
   like($task->job_handle(), qr/H:.+:.+/);
   like($task->data(), qr/\w+/);
   like($task->data_size(), qr/\d+/);
-  like($task->function(), qr/\w+/);
+  like($task->function_name(), qr/\w+/);
 
   $completed++;
 
@@ -209,7 +294,7 @@ sub fail_cb {
   my ($task) = @_;
 
   like($task->job_handle(), qr/H:.+:.+/);
-  like($task->function(), qr/(fail|quit)/);
+  like($task->function_name(), qr/(fail|quit)/);
 
   $failed++;
 
@@ -220,7 +305,7 @@ sub status_cb {
   my ($task) = @_;
 
   like($task->job_handle(), qr/H:.+:.+/);
-  is($task->function(), "status");
+  is($task->function_name(), "status");
   is($task->denominator(), 4);
   is($task->numerator(), ++$numerator);
 
@@ -231,7 +316,7 @@ sub warning_cb {
   my ($task) = @_;
 
   like($task->job_handle(), qr/H:.+:.+/);
-  is($task->function(), "warning");
+  is($task->function_name(), "warning");
 
   $warnings++;
 

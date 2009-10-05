@@ -1,3 +1,27 @@
+0.6_01 -
+ * depends on libgearman 0.10 or later
+ * API changes:
+   client/worker set_options() now only gets one parameter
+  
+   job functions renamed:
+    status()   -> send_status()
+    data()     -> send_data()
+    fail()     -> send_fail()
+    warning()  -> send_warning()
+    complete() -> send_complete()
+
+   task functions renamed:
+    function() -> function_name()
+    uuid()     -> unique()
+   
+ * add client function add_task_status()
+ * add client/worker options(), add_options() and remove_options() functions
+ * add client/worker timeout() and set_timeout() functions
+ * add client/worker wait() function
+ * add worker functions register(), unregister() and unregister_all()
+ * add client clear_fn() function
+ * add task functions is_known() and is_running()
+
 0.5 - 2009-08-26
  * extend makefile to support custom libgearman locations
  * fix client hanging if worker functions return undef

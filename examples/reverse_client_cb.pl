@@ -56,7 +56,7 @@ for (1..REVERSE_TASKS)
     printf(STDERR "%s\n", $client->error());
     exit(1);
   }
-  printf("Added: %s\n", $task->uuid());
+  printf("Added: %s\n", $task->unique());
 }
 
 $client->set_created_fn(\&created_cb);

@@ -27,7 +27,7 @@ use Gearman::XS qw(:constants);
 use Gearman::XS::Worker;
 
 my %opts;
-if (!getopts('h:p:c:dsu', \%opts))
+if (!getopts('h:p:c:t:dsu', \%opts))
 {
   usage();
   exit(1);
@@ -36,6 +36,7 @@ if (!getopts('h:p:c:dsu', \%opts))
 my $host= $opts{h} || '';
 my $port= $opts{p} || 0;
 my $count= $opts{c} || 0;
+my $timeout= $opts{t} || -1;
 
 my $options= REVERSE_WORKER_OPTIONS_NONE;
 
@@ -56,7 +57,12 @@ my $worker= new Gearman::XS::Worker;
 
 if ($options & REVERSE_WORKER_OPTIONS_UNIQUE)
 {
-  $worker->set_options(GEARMAN_WORKER_GRAB_UNIQ, 1);
+  $worker->add_options(GEARMAN_WORKER_GRAB_UNIQ);
+}
+
+if ($timeout >= 0)
+{
+  $worker->set_timeout($timeout);
 }
 
 my $ret= $worker->add_server($host, $port);
@@ -105,7 +111,7 @@ sub reverse {
 
     if ($options & REVERSE_WORKER_OPTIONS_DATA)
     {
-      my $ret= $job->data($letter);
+      my $ret= $job->send_data($letter);
       if ($ret != GEARMAN_SUCCESS)
       {
         return '';
@@ -114,7 +120,7 @@ sub reverse {
 
     if ($options & REVERSE_WORKER_OPTIONS_STATUS)
     {
-      my $ret= $job->status($workload_size - $i, $workload_size);
+      my $ret= $job->send_status($workload_size - $i, $workload_size);
       if ($ret != GEARMAN_SUCCESS)
       {
         return '';
@@ -139,12 +145,13 @@ sub reverse {
 
 sub usage {
   printf("\nusage: %s [-h <host>] [-p <port>]\n", $0);
-  printf("\t-c <count> - number of jobs to run before exiting\n");
-  printf("\t-d         - send result back in data chunks\n");
-  printf("\t-h <host>  - job server host\n");
-  printf("\t-p <port>  - job server port\n");
-  printf("\t-s         - send status updates and sleep while running job\n");
-  printf("\t-u         - when grabbing jobs, grab the unique id\n");
+  printf("\t-c <count>   - number of jobs to run before exiting\n");
+  printf("\t-d           - send result back in data chunks\n");
+  printf("\t-h <host>    - job server host\n");
+  printf("\t-p <port>    - job server port\n");
+  printf("\t-s           - send status updates and sleep while running job\n");
+  printf("\t-u           - when grabbing jobs, grab the unique id\n");
+  printf("\t-t <timeout> - timeout in milliseconds\n");
 }
 
 exit;

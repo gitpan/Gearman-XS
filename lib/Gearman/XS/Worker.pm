@@ -11,7 +11,7 @@ package Gearman::XS::Worker;
 use strict;
 use warnings;
 
-our $VERSION= '0.5';
+our $VERSION= '0.6_01';
 
 use Gearman::XS;
 
@@ -112,9 +112,49 @@ Get a job from one of the job servers. Returns a standard gearman return value.
 
 Return an error string for the last error encountered.
 
-=head2 $worker->set_options($options, $data)
+=head2 $worker->options()
 
-Set options for a worker structure.
+Get options for a worker.
+
+=head2 $worker->set_options($options)
+
+Set options for a worker.
+
+=head2 $worker->add_options($options)
+
+Add options for a worker.
+
+=head2 $worker->remove_options($options)
+
+Remove options for a worker.
+
+=head2 $worker->timeout()
+
+Get current socket I/O activity timeout value. Returns Timeout in milliseconds
+to wait for I/O activity.
+
+=head2 $worker->set_timeout($timeout)
+
+Set socket I/O activity timeout for connections in milliseconds.
+
+=head2 $worker->register($function_name, $timeout)
+
+Register function with job servers with an optional timeout. The timeout
+specifies how many seconds the server will wait before marking a job as failed.
+Returns a standard gearman return value.
+
+=head2 $worker->unregister($function_name)
+
+Unregister function with job servers. Returns a standard gearman return value.
+
+=head2 $worker->unregister_all()
+
+Unregister all functions with job servers. Returns a standard gearman return
+value.
+
+=head2 $worker->wait()
+
+When in non-blocking I/O mode, wait for activity from one of the servers.
 
 =head1 BUGS
 

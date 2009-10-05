@@ -11,7 +11,7 @@ package Gearman::XS::Job;
 use strict;
 use warnings;
 
-our $VERSION= '0.5';
+our $VERSION= '0.6_01';
 
 use Gearman::XS;
 
@@ -37,11 +37,6 @@ Get the workload for a job.
 
 Get job handle.
 
-=head2 $job->status($numerator, $denominator)
-
-Send status information for a running job. Returns a standard gearman return
-value.
-
 =head2 $job->function_name()
 
 Get the function name associated with a job.
@@ -50,20 +45,25 @@ Get the function name associated with a job.
 
 Get the unique ID associated with a job.
 
-=head2 $job->data($data)
+=head2 $job->send_status($numerator, $denominator)
+
+Send status information for a running job. Returns a standard gearman return
+value.
+
+=head2 $job->send_data($data)
 
 Send data for a running job. Returns a standard gearman return value.
 
-=head2 $job->fail()
+=head2 $job->send_fail()
 
 Send fail status for a job. Returns a standard gearman return value.
 
-=head2 $job->complete($result)
+=head2 $job->send_complete($result)
 
 Send result and complete status for a job. Returns a standard gearman return
 value.
 
-=head2 $job->warning($warning)
+=head2 $job->send_warning($warning)
 
 Send warning for a running job. Returns a standard gearman return value.
 

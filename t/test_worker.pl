@@ -29,6 +29,7 @@ $worker->add_function("quit", 0, \&quit, '');
 $worker->add_function("complete", 0, \&complete, '');
 $worker->add_function("warning", 0, \&warning, '');
 $worker->add_function("undef_return", 0, \&undef_return, '');
+$worker->add_function("wait_two_seconds", 0, \&wait_two_seconds, '');
 
 while (1)
 {
@@ -45,9 +46,6 @@ sub reverse {
   my $workload= $job->workload();
   my $result= reverse($workload);
 
-  printf("Job=%s Function_Name=%s Workload=%s Result=%s\n",
-          $job->handle(), $job->function_name(), $job->workload(), $result);
-
   return $result;
 }
 
@@ -56,42 +54,40 @@ sub quit {
 
   my $workload= $job->workload();
 
-  printf("Job=%s Function_Name=%s Workload=%s\n",
-          $job->handle(), $job->function_name(), $job->workload());
-
   die "I'm out.\n";
 }
 
 sub status {
   my ($job) = @_;
 
-  printf("Job=%s Function_Name=%s Workload=%s\n",
-          $job->handle(), $job->function_name(), $job->workload());
+  $job->send_data('test data');
 
-  $job->status(1, 4);
   sleep(1);
-  $job->status(2, 4);
-  sleep(1);
-  $job->status(3, 4);
-  sleep(1);
-  $job->status(4, 4);
+  $job->send_status(1, 4);
 
-  return 1;
+  sleep(1);
+  $job->send_status(2, 4);
+
+  sleep(1);
+  $job->send_status(3, 4);
+
+  sleep(1);
+  $job->send_status(4, 4);
+
+  sleep(1);
+  return $job->workload();
 }
 
 sub warning {
   my ($job) = @_;
 
-  $job->warning("argh");
+  $job->send_warning("argh");
 
-  return($job->workload());
+  return $job->workload();
 }
 
 sub add {
   my ($job) = @_;
-
-  printf("Job=%s Function_Name=%s Workload=%s\n",
-          $job->handle(), $job->function_name(), $job->workload());
 
   my ($a, $b) = split(/\s+/, $job->workload());
 
@@ -104,9 +100,6 @@ sub storable {
   my $storable= $job->workload();
   my $workload= Storable::thaw($storable);
 
-  printf("Job=%s Function_Name=%s Workload=%s",
-          $job->handle(), $job->function_name(), Dumper($workload), $result);
-
   return Storable::nfreeze($workload);
 }
 
@@ -115,19 +108,22 @@ sub fail {
 
   my $workload= $job->workload();
 
-  printf("Job=%s Function_Name=%s Workload=%s\n",
-          $job->handle(), $job->function_name(), $job->workload());
-
-  $job->fail();
+  $job->send_fail();
 }
 
 sub complete {
   my ($job) = @_;
 
-  $job->complete($job->workload());
+  $job->send_complete($job->workload());
 }
 
 sub undef_return {
   my ($job) = @_;
   return;
+}
+
+sub wait_two_seconds {
+  my ($job) = @_;
+  sleep(2);
+  return 1;
 }

@@ -26,6 +26,7 @@ lib/Gearman/XS/Client.pm
 lib/Gearman/XS/Job.pm
 lib/Gearman/XS/Task.pm
 lib/Gearman/XS/Worker.pm
+Makefile.old
 Makefile.PL
 MANIFEST			This list of files
 META.yml
@@ -41,6 +42,7 @@ t/lib/TestLib.pm
 t/perlcriticrc
 t/test_worker.pl
 Task.xs
+TODO
 typemap
 Worker.xs
 XS.xs

@@ -27,8 +27,8 @@ SV* _create_worker() {
       Perl_croak(aTHX_ "gearman_worker_create:NULL\n");
   }
 
-  gearman_worker_set_workload_free(self, _perl_free, NULL);
-  gearman_worker_set_workload_malloc(self, _perl_malloc, NULL);
+  gearman_worker_set_workload_free_fn(self, _perl_free, NULL);
+  gearman_worker_set_workload_malloc_fn(self, _perl_malloc, NULL);
 
   return _bless("Gearman::XS::Worker", self);
 }
@@ -143,18 +143,48 @@ echo(self, workload)
     RETVAL
 
 gearman_return_t
-add_function(self, function_name, timeout, worker_fn, fn_arg)
+register(self, function_name, ...)
+    gearman_xs_worker *self
+    const char *function_name
+  PREINIT:
+    uint32_t timeout= 0;
+  CODE:
+    if( items > 2 )
+      timeout= (uint32_t)SvIV(ST(2));
+    RETVAL= gearman_worker_register(self, function_name, timeout);
+  OUTPUT:
+    RETVAL
+
+gearman_return_t
+unregister(self, function_name)
+    gearman_xs_worker *self
+    const char *function_name
+  CODE:
+    RETVAL= gearman_worker_unregister(self, function_name);
+  OUTPUT:
+    RETVAL
+
+gearman_return_t
+unregister_all(self)
+    gearman_xs_worker *self
+  CODE:
+    RETVAL= gearman_worker_unregister_all(self);
+  OUTPUT:
+    RETVAL
+
+gearman_return_t
+add_function(self, function_name, timeout, worker_fn, context)
     gearman_xs_worker *self
     const char *function_name
     uint32_t timeout
     SV * worker_fn
-    const char *fn_arg
+    const char *context
   INIT:
     gearman_worker_cb *worker_cb;
   CODE:
     Newxz(worker_cb, 1, gearman_worker_cb);
     worker_cb->func= newSVsv(worker_fn);
-    worker_cb->cb_arg= fn_arg;
+    worker_cb->cb_arg= context;
     RETVAL= gearman_worker_add_function(self, function_name, timeout,
                                         _perl_worker_function_callback,
                                         (void *)worker_cb );
@@ -177,13 +207,34 @@ error(self)
   OUTPUT:
     RETVAL
 
+gearman_worker_options_t
+options(self)
+    gearman_xs_worker *self
+  CODE:
+    RETVAL= gearman_worker_options(self);
+  OUTPUT:
+    RETVAL
+
 void
-set_options(self, options, data)
+set_options(self, options)
     gearman_xs_worker *self
     gearman_worker_options_t options
-    uint32_t data
   CODE:
-    gearman_worker_set_options(self, options, data);
+    gearman_worker_set_options(self, options);
+
+void
+add_options(self, options)
+    gearman_xs_worker *self
+    gearman_worker_options_t options
+  CODE:
+    gearman_worker_add_options(self, options);
+
+void
+remove_options(self, options)
+    gearman_xs_worker *self
+    gearman_worker_options_t options
+  CODE:
+    gearman_worker_remove_options(self, options);
 
 void
 grab_job(self)
@@ -197,6 +248,29 @@ grab_job(self)
       XPUSHs(_bless("Gearman::XS::Job", &(self->work_job)));
     else
       XPUSHs(&PL_sv_undef);
+
+int
+timeout(self)
+    gearman_xs_worker *self
+  CODE:
+    RETVAL= gearman_worker_timeout(self);
+  OUTPUT:
+    RETVAL
+
+void
+set_timeout(self, timeout)
+    gearman_xs_worker *self
+    int timeout
+  CODE:
+    gearman_worker_set_timeout(self, timeout);
+
+gearman_return_t
+wait(self)
+    gearman_xs_worker *self
+  CODE:
+    RETVAL= gearman_worker_wait(self);
+  OUTPUT:
+    RETVAL
 
 void
 DESTROY(self)

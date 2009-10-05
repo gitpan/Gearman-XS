@@ -11,7 +11,7 @@ package Gearman::XS::Task;
 use strict;
 use warnings;
 
-our $VERSION= '0.5';
+our $VERSION= '0.6_01';
 
 use Gearman::XS;
 
@@ -41,7 +41,7 @@ Get data being returned for a task.
 
 Get data size being returned for a task.
 
-=head2 $task->function()
+=head2 $task->function_name()
 
 Get function name associated with a task.
 
@@ -53,9 +53,19 @@ Get the numerator of percentage complete for a task.
 
 Get the denominator of percentage complete for a task.
 
-=head2 $task->uuid()
+=head2 $task->unique()
 
 Get unique identifier for a task.
+
+=head2 $task->is_known()
+
+Get status on whether a task is known or not. Returns 1 if known, empty string
+if not.
+
+=head2 $task->is_running()
+
+Get status on whether a task is running or not. Returns 1 if running, empty
+string if not.
 
 =head1 BUGS
 

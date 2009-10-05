@@ -9,7 +9,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 20;
+use Test::More tests => 32;
 
 # import constants
 use Gearman::XS qw(:constants);
@@ -24,6 +24,22 @@ is(GEARMAN_WORK_FAIL, 24);
 my $client = new Gearman::XS::Client;
 isa_ok($client, 'Gearman::XS::Client');
 
+$client->add_options(GEARMAN_CLIENT_TASK_IN_USE);
+ok($client->options() & GEARMAN_CLIENT_TASK_IN_USE);
+
+$client->remove_options(GEARMAN_CLIENT_TASK_IN_USE);
+ok(!($client->options() & GEARMAN_CLIENT_TASK_IN_USE));
+
+$client->set_options(GEARMAN_CLIENT_UNBUFFERED_RESULT);
+ok($client->options() & GEARMAN_CLIENT_UNBUFFERED_RESULT);
+
+$client->remove_options(GEARMAN_CLIENT_UNBUFFERED_RESULT);
+ok(!($client->options() & GEARMAN_CLIENT_UNBUFFERED_RESULT));
+
+is($client->timeout(), -1);
+$client->set_timeout(10000);
+is($client->timeout(), 10000);
+
 is($client->error(), '');
 
 is($client->add_server(), GEARMAN_SUCCESS);
@@ -35,8 +51,21 @@ is($client->add_servers('127.0.0.1:4730,127.0.0.1'), GEARMAN_SUCCESS);
 my $worker = new Gearman::XS::Worker;
 isa_ok($worker, 'Gearman::XS::Worker');
 
-$worker->set_options(GEARMAN_WORKER_NON_BLOCKING, 1);
-$worker->set_options(GEARMAN_WORKER_NON_BLOCKING, 0);
+$worker->add_options(GEARMAN_WORKER_NON_BLOCKING);
+ok($worker->options() & GEARMAN_WORKER_NON_BLOCKING);
+
+$worker->remove_options(GEARMAN_WORKER_NON_BLOCKING);
+ok(!($worker->options() & GEARMAN_WORKER_NON_BLOCKING));
+
+$worker->set_options(GEARMAN_WORKER_NON_BLOCKING);
+ok($worker->options() & GEARMAN_WORKER_NON_BLOCKING);
+
+$worker->remove_options(GEARMAN_WORKER_NON_BLOCKING);
+ok(!($worker->options() & GEARMAN_WORKER_NON_BLOCKING));
+
+is($worker->timeout(), GEARMAN_WORKER_WAIT_TIMEOUT);
+$worker->set_timeout(1000);
+is($worker->timeout(), 1000);
 
 is($worker->error(), '');
 

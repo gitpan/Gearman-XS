@@ -13,6 +13,7 @@ gearman_xs_task *	T_GTASK
 gearman_xs_worker *	T_GWORKER
 gearman_return_t	T_ENUM
 gearman_worker_options_t	T_ENUM
+gearman_client_options_t  T_ENUM
 in_port_t	T_IV
 uint32_t	T_IV
 
