@@ -1,4 +1,4 @@
-0.6_01 -
+0.6 - 2009-10-06
  * depends on libgearman 0.10 or later
  * API changes:
    client/worker set_options() now only gets one parameter
