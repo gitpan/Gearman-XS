@@ -9,7 +9,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 32;
+use Test::More tests => 33;
 
 # import constants
 use Gearman::XS qw(:constants);
@@ -19,6 +19,14 @@ my ($ret, $job, $job_handle);
 # test some constants
 is(GEARMAN_SUCCESS, 0);
 is(GEARMAN_WORK_FAIL, 24);
+
+# server
+my $s = Gearman::XS::Server->new();
+isa_ok($s, 'Gearman::XS::Server');
+
+$s->set_backlog(2);
+$s->set_job_retries(3);
+$s->set_threads(2);
 
 # client
 my $client = new Gearman::XS::Client;

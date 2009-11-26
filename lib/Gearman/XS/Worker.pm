@@ -11,7 +11,7 @@ package Gearman::XS::Worker;
 use strict;
 use warnings;
 
-our $VERSION= '0.6';
+our $VERSION= '0.7';
 
 use Gearman::XS;
 
@@ -155,6 +155,10 @@ value.
 =head2 $worker->wait()
 
 When in non-blocking I/O mode, wait for activity from one of the servers.
+
+=head2 $worker->set_log_fn($function, $verbose)
+
+Set logging function.
 
 =head1 BUGS
 

@@ -15,7 +15,7 @@ if (defined $GEARMAN_INCLUDE) {
   $INCLUDES .= " -I$GEARMAN_INCLUDE";
 }
 
-$LIBS .= ' -lgearman';
+$LIBS .= ' -lgearman -lgearman-server';
 
 name 'Gearman-XS';
 all_from 'lib/Gearman/XS.pm';
@@ -34,7 +34,7 @@ makemaker_args(
     },
 );
 
-cc_files map { "$_\.c" } qw/XS Const Client Worker Job Task/;
+cc_files map { "$_\.c" } qw/XS Const Client Worker Job Task Server/;
 tests 't/*.t';
 
 test_requires 'Test::More';

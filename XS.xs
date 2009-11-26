@@ -35,6 +35,7 @@ extern "C" {
   XS(boot_Gearman__XS__Task);
   XS(boot_Gearman__XS__Client);
   XS(boot_Gearman__XS__Job);
+  XS(boot_Gearman__XS__Server);
 #ifdef __cplusplus
 }
 #endif
@@ -50,3 +51,4 @@ BOOT:
   CALL_BOOT(boot_Gearman__XS__Task);
   CALL_BOOT(boot_Gearman__XS__Client);
   CALL_BOOT(boot_Gearman__XS__Job);
+  CALL_BOOT(boot_Gearman__XS__Server);

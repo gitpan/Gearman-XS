@@ -1,3 +1,7 @@
+0.7 - 2009-11-26
+ * add worker set_log_fn()
+ * new Gearman::XS::Server
+
 0.6 - 2009-10-06
  * depends on libgearman 0.10 or later
  * API changes:

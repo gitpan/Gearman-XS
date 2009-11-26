@@ -27,233 +27,231 @@ my $numerator = 0;
 my $data      = 0;
 my $tasks     = 0;
 
-SKIP: {
-  skip('Set $ENV{GEARMAN_LIVE_TEST} to run this test', 154)
-    if !$ENV{GEARMAN_LIVE_TEST};
+# client
+my $client= new Gearman::XS::Client;
+isa_ok($client, 'Gearman::XS::Client');
 
-  # client
-  my $client= new Gearman::XS::Client;
-  isa_ok($client, 'Gearman::XS::Client');
+is($client->error(), '');
+is($client->add_server('127.0.0.1', 4731), GEARMAN_SUCCESS);
 
-  is($client->error(), '');
-  is($client->add_server('127.0.0.1', 4731), GEARMAN_SUCCESS);
+# worker
+my $worker= new Gearman::XS::Worker;
+isa_ok($worker, 'Gearman::XS::Worker');
 
-  # worker
-  my $worker= new Gearman::XS::Worker;
-  isa_ok($worker, 'Gearman::XS::Worker');
+is($worker->error(), '');
+is($worker->add_server('127.0.0.1', 4731), GEARMAN_SUCCESS);
 
-  is($worker->error(), '');
-  is($worker->add_server('127.0.0.1', 4731), GEARMAN_SUCCESS);
+my $testlib = new TestLib;
+$testlib->run_test_server();
+$testlib->run_test_worker();
+sleep(2);
 
-  my $testlib = new TestLib;
-  $testlib->run_gearmand();
-  $testlib->run_test_worker();
+# gearman server running?
+is($client->echo("blubbtest"), GEARMAN_SUCCESS);
+is($worker->echo("blahfasel"), GEARMAN_SUCCESS);
 
-  # gearman server running?
-  is($client->echo("blubbtest"), GEARMAN_SUCCESS);
-  is($worker->echo("blahfasel"), GEARMAN_SUCCESS);
+# single task interface
+($ret, $result) = $client->do("reverse", 'do');
+is($ret, GEARMAN_SUCCESS);
+is($result, reverse('do'));
 
-  # single task interface
-  ($ret, $result) = $client->do("reverse", 'do');
-  is($ret, GEARMAN_SUCCESS);
-  is($result, reverse('do'));
+# this tests perls INT return type
+($ret, $result) = $client->do("add", '3 4');
+is($ret, GEARMAN_SUCCESS);
+is($result, 7);
 
-  # this tests perls INT return type
-  ($ret, $result) = $client->do("add", '3 4');
-  is($ret, GEARMAN_SUCCESS);
-  is($result, 7);
+# test binary data
+my %hash= (key => 'value');
+my $storable= Storable::nfreeze(\%hash);
+($ret, $result) = $client->do("storable", $storable);
+is($ret, GEARMAN_SUCCESS);
+is_deeply(\%hash, Storable::thaw($result));
 
-  # test binary data
-  my %hash= (key => 'value');
-  my $storable= Storable::nfreeze(\%hash);
-  ($ret, $result) = $client->do("storable", $storable);
-  is($ret, GEARMAN_SUCCESS);
-  is_deeply(\%hash, Storable::thaw($result));
+($ret, $result) = $client->do("reverse", 'do unique', 'unique');
+is($ret, GEARMAN_SUCCESS);
+is($result, reverse('do unique'));
 
-  ($ret, $result) = $client->do("reverse", 'do unique', 'unique');
-  is($ret, GEARMAN_SUCCESS);
-  is($result, reverse('do unique'));
+($ret, $result) = $client->do_high("reverse", 'do high');
+is($ret, GEARMAN_SUCCESS);
+is($result, reverse('do high'));
 
-  ($ret, $result) = $client->do_high("reverse", 'do high');
-  is($ret, GEARMAN_SUCCESS);
-  is($result, reverse('do high'));
+($ret, $result) = $client->do_low("reverse", 'do low');
+is($ret, GEARMAN_SUCCESS);
+is($result, reverse('do low'));
 
-  ($ret, $result) = $client->do_low("reverse", 'do low');
-  is($ret, GEARMAN_SUCCESS);
-  is($result, reverse('do low'));
+# single async task interface
+($ret, $job_handle) = $client->do_background("reverse", 'do background', 'unique');
+is($ret, GEARMAN_SUCCESS);
+like($job_handle, qr/H:.+:.+/);
 
-  # single async task interface
-  ($ret, $job_handle) = $client->do_background("reverse", 'do background', 'unique');
-  is($ret, GEARMAN_SUCCESS);
-  like($job_handle, qr/H:.+:.+/);
+($ret, $job_handle) = $client->do_high_background("reverse", 'do high background');
+is($ret, GEARMAN_SUCCESS);
+like($job_handle, qr/H:.+:.+/);
 
-  ($ret, $job_handle) = $client->do_high_background("reverse", 'do high background');
-  is($ret, GEARMAN_SUCCESS);
-  like($job_handle, qr/H:.+:.+/);
+($ret, $job_handle) = $client->do_low_background("reverse", 'do low background');
+is($ret, GEARMAN_SUCCESS);
+like($job_handle, qr/H:.+:.+/);
 
-  ($ret, $job_handle) = $client->do_low_background("reverse", 'do low background');
-  is($ret, GEARMAN_SUCCESS);
-  like($job_handle, qr/H:.+:.+/);
+# concurrent interface
+($ret, $task) = $client->add_task("reverse", 'normal');
+is($ret, GEARMAN_SUCCESS);
+isa_ok($task, 'Gearman::XS::Task');
 
-  # concurrent interface
-  ($ret, $task) = $client->add_task("reverse", 'normal');
-  is($ret, GEARMAN_SUCCESS);
-  isa_ok($task, 'Gearman::XS::Task');
+($ret, $task) = $client->add_task_high("reverse", 'high');
+is($ret, GEARMAN_SUCCESS);
+isa_ok($task, 'Gearman::XS::Task');
 
-  ($ret, $task) = $client->add_task_high("reverse", 'high');
-  is($ret, GEARMAN_SUCCESS);
-  isa_ok($task, 'Gearman::XS::Task');
+($ret, $task) = $client->add_task_low("reverse", 'low');
+is($ret, GEARMAN_SUCCESS);
+isa_ok($task, 'Gearman::XS::Task');
 
-  ($ret, $task) = $client->add_task_low("reverse", 'low');
-  is($ret, GEARMAN_SUCCESS);
-  isa_ok($task, 'Gearman::XS::Task');
+# concurrent async interface
+($ret, $task) = $client->add_task_background("reverse", 'background normal');
+is($ret, GEARMAN_SUCCESS);
+isa_ok($task, 'Gearman::XS::Task');
 
-  # concurrent async interface
-  ($ret, $task) = $client->add_task_background("reverse", 'background normal');
-  is($ret, GEARMAN_SUCCESS);
-  isa_ok($task, 'Gearman::XS::Task');
+($ret, $task) = $client->add_task_high_background("reverse", 'background high');
+is($ret, GEARMAN_SUCCESS);
+isa_ok($task, 'Gearman::XS::Task');
 
-  ($ret, $task) = $client->add_task_high_background("reverse", 'background high');
-  is($ret, GEARMAN_SUCCESS);
-  isa_ok($task, 'Gearman::XS::Task');
+($ret, $task) = $client->add_task_low_background("reverse", 'background low');
+is($ret, GEARMAN_SUCCESS);
+isa_ok($task, 'Gearman::XS::Task');
 
-  ($ret, $task) = $client->add_task_low_background("reverse", 'background low');
-  is($ret, GEARMAN_SUCCESS);
-  isa_ok($task, 'Gearman::XS::Task');
+# test fail callback
+($ret, $task) = $client->add_task("quit", "I'll be dead");
+is($ret, GEARMAN_SUCCESS);
+isa_ok($task, 'Gearman::XS::Task');
 
-  # test fail callback
-  ($ret, $task) = $client->add_task("quit", "I'll be dead");
-  is($ret, GEARMAN_SUCCESS);
-  isa_ok($task, 'Gearman::XS::Task');
+($ret, $task) = $client->add_task("fail", "I will fail.");
+is($ret, GEARMAN_SUCCESS);
+isa_ok($task, 'Gearman::XS::Task');
 
-  ($ret, $task) = $client->add_task("fail", "I will fail.");
-  is($ret, GEARMAN_SUCCESS);
-  isa_ok($task, 'Gearman::XS::Task');
+# test status callback
+($ret, $task) = $client->add_task("status", "I'll phone back 4 times");
+is($ret, GEARMAN_SUCCESS);
+isa_ok($task, 'Gearman::XS::Task');
+is($task->numerator(), 0);
+is($task->denominator(), 0);
+like($task->unique(), qr/\w+-\w+-\w+-\w+-\w+/);
 
-  # test status callback
-  ($ret, $task) = $client->add_task("status", "I'll phone back 4 times");
-  is($ret, GEARMAN_SUCCESS);
-  isa_ok($task, 'Gearman::XS::Task');
-  is($task->numerator(), 0);
-  is($task->denominator(), 0);
-  like($task->unique(), qr/\w+-\w+-\w+-\w+-\w+/);
+# test warning callback
+($ret, $task) = $client->add_task("warning", "I'll be dead");
+is($ret, GEARMAN_SUCCESS);
+isa_ok($task, 'Gearman::XS::Task');
 
-  # test warning callback
-  ($ret, $task) = $client->add_task("warning", "I'll be dead");
-  is($ret, GEARMAN_SUCCESS);
-  isa_ok($task, 'Gearman::XS::Task');
+# callback functions
+$client->set_created_fn(\&created_cb);
+$client->set_data_fn(\&data_cb);
+$client->set_complete_fn(\&completed_cb);
+$client->set_fail_fn(\&fail_cb);
+$client->set_status_fn(\&status_cb);
+$client->set_warning_fn(\&warning_cb);
 
-  # callback functions
-  $client->set_created_fn(\&created_cb);
-  $client->set_data_fn(\&data_cb);
-  $client->set_complete_fn(\&completed_cb);
-  $client->set_fail_fn(\&fail_cb);
-  $client->set_status_fn(\&status_cb);
-  $client->set_warning_fn(\&warning_cb);
+# run concurrent tasks
+is($client->run_tasks(), GEARMAN_SUCCESS);
 
-  # run concurrent tasks
-  is($client->run_tasks(), GEARMAN_SUCCESS);
+# check callback results
+is($created, 10);
+is($completed, 5);
+is($failed, 2);
+is($warnings, 1);
+is($data, 1);
+is($numerator, 4);
 
-  # check callback results
-  is($created, 10);
-  is($completed, 5);
-  is($failed, 2);
-  is($warnings, 1);
-  is($data, 1);
-  is($numerator, 4);
+# test clear_fn() really clears callback
+$client->clear_fn();
+($ret, $task) = $client->add_task("reverse", 'normal');
+is($client->run_tasks(), GEARMAN_SUCCESS);
+is($created, 10);
+is($completed, 5);
+is($failed, 2);
+is($warnings, 1);
+is($data, 1);
+is($numerator, 4);
 
-  # test clear_fn() really clears callback
-  $client->clear_fn();
-  ($ret, $task) = $client->add_task("reverse", 'normal');
-  is($client->run_tasks(), GEARMAN_SUCCESS);
-  is($created, 10);
-  is($completed, 5);
-  is($failed, 2);
-  is($warnings, 1);
-  is($data, 1);
-  is($numerator, 4);
+($ret, $result) = $client->do("undef_return", 'blah');
+is($ret, GEARMAN_SUCCESS);
+is($result, undef);
 
-  ($ret, $result) = $client->do("undef_return", 'blah');
-  is($ret, GEARMAN_SUCCESS);
-  is($result, undef);
+($ret, $result) = $client->do("complete", 'blubb');
+is($ret, GEARMAN_SUCCESS);
+is($result, 'blubb');
 
-  ($ret, $result) = $client->do("complete", 'blubb');
-  is($ret, GEARMAN_SUCCESS);
-  is($result, 'blubb');
+($ret, $result) = $client->do('warning', 'blubb');
+is($ret, GEARMAN_WORK_WARNING);
+is($result, 'argh');
+($ret, $result) = $client->do('warning', 'blubb');
+is($ret, GEARMAN_SUCCESS);
+is($result, 'blubb');
 
-  ($ret, $result) = $client->do('warning', 'blubb');
-  is($ret, GEARMAN_WORK_WARNING);
-  is($result, 'argh');
-  ($ret, $result) = $client->do('warning', 'blubb');
-  is($ret, GEARMAN_SUCCESS);
-  is($result, 'blubb');
+($ret, $result) = $client->do('fail', 'blubb');
+is($ret, GEARMAN_WORK_FAIL);
+is($result, undef);
 
-  ($ret, $result) = $client->do('fail', 'blubb');
-  is($ret, GEARMAN_WORK_FAIL);
-  is($result, undef);
+$client= new Gearman::XS::Client;
+$client->add_server('127.0.0.1', 4731);
 
-  $client= new Gearman::XS::Client;
-  $client->add_server('127.0.0.1', 4731);
+# You can turn off auto task destruction by unsetting this flag on a gearman client.
+$client->remove_options(GEARMAN_CLIENT_FREE_TASKS);
 
-  # You can turn off auto task destruction by unsetting this flag on a gearman client.
-  $client->remove_options(GEARMAN_CLIENT_FREE_TASKS);
+($ret, $job_handle) = $client->do_background("status", "blubb");
+is($ret, GEARMAN_SUCCESS);
 
-  ($ret, $job_handle) = $client->do_background("status", "blubb");
-  is($ret, GEARMAN_SUCCESS);
+($ret, $task) = $client->add_task_status($job_handle);
+is($ret, GEARMAN_SUCCESS);
+isa_ok($task, 'Gearman::XS::Task');
 
-  ($ret, $task) = $client->add_task_status($job_handle);
-  is($ret, GEARMAN_SUCCESS);
-  isa_ok($task, 'Gearman::XS::Task');
+is($task->is_known(), '');
+sleep(1);     # give the worker some time to start.
+is($task->is_running(), '');
 
-  is($task->is_known(), '');
-  is($task->is_running(), '');
+is($client->run_tasks(), GEARMAN_SUCCESS);
 
-  is($client->run_tasks(), GEARMAN_SUCCESS);
+is($task->is_known(),1 );
+is($task->is_running(), 1);
 
-  is($task->is_known(),1 );
-  is($task->is_running(), 1);
+# test timeout
+$client->set_timeout(1000); # 1 second
+($ret, $result) = $client->do("wait_two_seconds", 'blubb');
+is($ret, GEARMAN_TIMEOUT);
+is($result, undef);
+$client->set_timeout(-1); # infinite
 
-  # test timeout
-  $client->set_timeout(1000); # 1 second
-  ($ret, $result) = $client->do("wait_two_seconds", 'blubb');
-  is($ret, GEARMAN_TIMEOUT);
-  is($result, undef);
-  $client->set_timeout(-1); # infinite
+$client= new Gearman::XS::Client;
+$client->add_server('127.0.0.1', 4731);
+$client->add_options(GEARMAN_CLIENT_NON_BLOCKING);
 
-  $client= new Gearman::XS::Client;
-  $client->add_server('127.0.0.1', 4731);
-  $client->add_options(GEARMAN_CLIENT_NON_BLOCKING);
+$tasks= 2;
+$client->add_task("reverse", 'hello');
+$client->add_task("reverse", 'world');
 
-  $tasks= 2;
-  $client->add_task("reverse", 'hello');
-  $client->add_task("reverse", 'world');
+$client->set_created_fn(\&created_cb);
+$client->set_complete_fn(\&completed_cb);
 
-  $client->set_created_fn(\&created_cb);
-  $client->set_complete_fn(\&completed_cb);
-
-  # This while loop should be replaced with $client->send_tasks();
-  while (1)
+# This while loop should be replaced with $client->send_tasks();
+while (1)
+{
+  my $ret = $client->run_tasks();
+  if ($ret == GEARMAN_SUCCESS || $tasks <= 0)
   {
-    my $ret = $client->run_tasks();
-    if ($ret == GEARMAN_SUCCESS || $tasks <= 0)
-    {
-      last;
-    }
-    is($client->wait(), GEARMAN_SUCCESS);
+    last;
   }
-  is($created, 12);
-  is($completed, 5);
-  
-  # jobs have been sent, do something else here...
-  sleep(2);
-
-  # now block for results
-  $client->remove_options(GEARMAN_CLIENT_NON_BLOCKING);
-  is($client->run_tasks(), GEARMAN_SUCCESS);
-
-  is($created, 12);
-  is($completed, 7);
+  is($client->wait(), GEARMAN_SUCCESS);
 }
+is($created, 12);
+is($completed, 5);
+
+# jobs have been sent, do something else here...
+sleep(2);
+
+# now block for results
+$client->remove_options(GEARMAN_CLIENT_NON_BLOCKING);
+is($client->run_tasks(), GEARMAN_SUCCESS);
+
+is($created, 12);
+is($completed, 7);
+
 
 sub created_cb {
   my ($task) = @_;

@@ -94,6 +94,26 @@ void *_perl_worker_function_callback(gearman_job_st *job,
   return result;
 }
 
+void _perl_log_fn_callback( const char *line,
+                            gearman_verbose_t verbose,
+                            void *fn)
+{
+  dSP;
+
+  ENTER;
+  SAVETMPS;
+
+  PUSHMARK(SP);
+  XPUSHs(sv_2mortal(newSVpv(line, strlen(line))));
+  XPUSHs(sv_2mortal(newSViv(verbose)));
+  PUTBACK;
+
+  call_sv(fn, G_VOID);
+
+  FREETMPS;
+  LEAVE;
+}
+
 MODULE = Gearman::XS::Worker    PACKAGE = Gearman::XS::Worker
 
 PROTOTYPES: ENABLE
@@ -271,6 +291,14 @@ wait(self)
     RETVAL= gearman_worker_wait(self);
   OUTPUT:
     RETVAL
+
+void
+set_log_fn(self, fn, verbose)
+    gearman_xs_worker *self
+    SV * fn
+    gearman_verbose_t verbose
+  CODE:
+    gearman_worker_set_log_fn(self, _perl_log_fn_callback, newSVsv(fn), verbose);
 
 void
 DESTROY(self)
