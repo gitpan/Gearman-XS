@@ -7,19 +7,22 @@ use FindBin qw( $Bin );
 
 sub new { return bless {}, shift }
 
-sub run_test_server {
+sub run_gearmand {
   my ($self) = @_;
-  if ($self->{test_server_pid}= fork)
-  {
-    warn("test_server PID is " . $self->{test_server_pid});
+  my $gearmand= `which gearmand`;
+  chomp $gearmand;
+  die "Cannot locate gearmand in $ENV{PATH}"
+    if !$gearmand;
+  if ($self->{gearmand_pid}= fork)  {
+    warn("test_server PID is " . $self->{gearmand_pid});
   }
   else {
     die "cannot fork: $!"
-      if (!defined $self->{test_server_pid});
+      if (!defined $self->{gearmand_pid});
     $|++;
-    my @cmd = ($^X, "$Bin/test_server.pl");
+    my @cmd= ($gearmand, '-p', 4731);
     exec(@cmd)
-      or die("Could not exec $Bin/test_server.pl");
+      or die("Could not exec $gearmand");
     exit;
   }
 }
@@ -45,7 +48,7 @@ sub run_test_worker {
 sub DESTROY {
   my ($self) = @_;
 
-  for my $proc (qw/test_server_pid test_worker_pid/)
+  for my $proc (qw/gearmand_pid test_worker_pid/)
   {
     system 'kill', $self->{$proc}
       if $self->{$proc};

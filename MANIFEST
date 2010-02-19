@@ -24,7 +24,6 @@ Job.xs
 lib/Gearman/XS.pm
 lib/Gearman/XS/Client.pm
 lib/Gearman/XS/Job.pm
-lib/Gearman/XS/Server.pm
 lib/Gearman/XS/Task.pm
 lib/Gearman/XS/Worker.pm
 Makefile.PL
@@ -32,16 +31,16 @@ MANIFEST			This list of files
 META.yml
 ppport.h
 README
-Server.xs
 t/00-use.t
 t/02-pod.t
 t/03-basic.t
 t/04-live.t
 t/05-live-worker.t
+t/06_live-worker-timeout.t
+t/80-memleak.t
 t/99-perlcritic.t
 t/lib/TestLib.pm
 t/perlcriticrc
-t/test_server.pl
 t/test_worker.pl
 Task.xs
 typemap

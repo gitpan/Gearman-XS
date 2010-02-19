@@ -11,7 +11,7 @@ package Gearman::XS::Worker;
 use strict;
 use warnings;
 
-our $VERSION= '0.7';
+our $VERSION= '0.8';
 
 use Gearman::XS;
 
@@ -151,6 +151,11 @@ Unregister function with job servers. Returns a standard gearman return value.
 
 Unregister all functions with job servers. Returns a standard gearman return
 value.
+
+=head2 $worker->function_exist($function_name)
+
+See if a function exists in the server. Returns 1 if the function exists,
+empty string if not.
 
 =head2 $worker->wait()
 

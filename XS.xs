@@ -9,6 +9,17 @@
 
 #include "gearman_xs.h"
 
+static void
+call_XS ( pTHX_ void (*subaddr) (pTHX_ CV *), CV * cv, SV ** mark )
+{
+ dSP;
+ PUSHMARK (mark);
+ (*subaddr) (aTHX_ cv);
+ PUTBACK;
+}
+
+#define CALL_BOOT(name)	call_XS (aTHX_ name, cv, mark)
+
 SV *_bless(const char *class, void *obj) {
   SV * ret = newSViv(0);
   XS_STRUCT2OBJ(ret, class, obj);
@@ -17,15 +28,17 @@ SV *_bless(const char *class, void *obj) {
 
 void _perl_free(void *ptr, void *arg)
 {
+  PERL_UNUSED_VAR(arg);
   Safefree(ptr);
 }
 
 void *_perl_malloc(size_t size, void *arg)
 {
+  PERL_UNUSED_VAR(arg);
   return safemalloc(size);
 }
 
-// We need these declarations with "C" linkage
+/* We need these declarations with "C" linkage */
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,7 +48,6 @@ extern "C" {
   XS(boot_Gearman__XS__Task);
   XS(boot_Gearman__XS__Client);
   XS(boot_Gearman__XS__Job);
-  XS(boot_Gearman__XS__Server);
 #ifdef __cplusplus
 }
 #endif
@@ -51,4 +63,10 @@ BOOT:
   CALL_BOOT(boot_Gearman__XS__Task);
   CALL_BOOT(boot_Gearman__XS__Client);
   CALL_BOOT(boot_Gearman__XS__Job);
-  CALL_BOOT(boot_Gearman__XS__Server);
+
+const char *
+strerror(gearman_return_t rc)
+  CODE:
+    RETVAL = gearman_strerror(rc);
+  OUTPUT:
+    RETVAL

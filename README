@@ -1,4 +1,4 @@
-Gearman::XS version 0.7
+Gearman::XS version 0.8
 ==============================
 
 This is a Perl front end for the Gearman C library. It aims to provide a
@@ -19,6 +19,10 @@ the GEARMAN_INCLUDE and GEARMAN_LIB environment variables:
   export GEARMAN_INCLUDE=/opt/gearmand/include
   export GEARMAN_LIB=/opt/gearmand/lib
 
+To run the complete testsuite make sure you have 'gearmand' in your PATH and
+type:
+   
+  GEARMAN_LIVE_TEST=1 make test
 
 DEPENDENCIES
 
@@ -26,8 +30,7 @@ This module requires these other modules and libraries:
 
   Test::More
   Storable
-  libgearman 0.10 or later
-  libgearman-server
+  libgearman 0.12 or later
 
 DEVELOPMENT
 

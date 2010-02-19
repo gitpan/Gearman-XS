@@ -15,6 +15,10 @@ use FindBin qw( $Bin );
 use lib ("$Bin/lib", "$Bin/../lib");
 use TestLib;
 
+if ( not $ENV{GEARMAN_LIVE_TEST} ) {
+  plan( skip_all => 'Set $ENV{GEARMAN_LIVE_TEST} to run this test' );
+}
+
 plan tests => 57;
 
 my ($ret, $job_handle);
@@ -25,23 +29,15 @@ my $timeout = 0;
 # client
 my $client= new Gearman::XS::Client;
 isa_ok($client, 'Gearman::XS::Client');
-
-is($client->error(), '');
 is($client->add_server('127.0.0.1', 4731), GEARMAN_SUCCESS);
 
 # worker
 my $worker= new Gearman::XS::Worker;
 isa_ok($worker, 'Gearman::XS::Worker');
-
-$worker->set_log_fn(\&log_callback, 9);
-
-$worker->add_options(GEARMAN_WORKER_GRAB_UNIQ);
-
-is($worker->error(), '');
 is($worker->add_server('127.0.0.1', 4731), GEARMAN_SUCCESS);
 
 my $testlib = new TestLib;
-$testlib->run_test_server();
+$testlib->run_gearmand();
 sleep(2);
 
 # gearman server running?
@@ -50,9 +46,13 @@ is($worker->echo("blahfasel"), GEARMAN_SUCCESS);
 
 # low-level function registration
 is($worker->register('blah'), GEARMAN_SUCCESS);
+ok($worker->function_exists('blah'));
 is($worker->register('blah_timeout', 10), GEARMAN_SUCCESS);
 is($worker->unregister('blah'), GEARMAN_SUCCESS);
+ok(!$worker->function_exists('blah'));
+is($worker->unregister('blah'), GEARMAN_NO_REGISTERED_FUNCTION);
 is($worker->unregister_all(), GEARMAN_SUCCESS);
+is($worker->unregister_all(), GEARMAN_NO_REGISTERED_FUNCTIONS);
 
 # gearman_worker_unregister_all() also remove the server from the list?
 is($worker->add_server('127.0.0.1', 4731), GEARMAN_SUCCESS);
@@ -90,13 +90,8 @@ for (1...3)
   is($worker->work(), GEARMAN_SUCCESS);
 }
 
-$worker->set_timeout(1000); # 1 second
-$ret = $worker->work();
-is($ret, GEARMAN_TIMEOUT);
-
-is($timeout, 1);
-
 ($ret, $job_handle) = $client->do_background("reverse", 'blubb');
+is($ret, GEARMAN_SUCCESS);
 my $job;
 ($ret, $job) = $worker->grab_job();
 is($ret, GEARMAN_SUCCESS);
@@ -107,17 +102,6 @@ is($job->function_name(), 'reverse');
 is($job->send_warning('aarg'), GEARMAN_SUCCESS);
 is($job->send_complete(reverse($job->workload())), GEARMAN_SUCCESS);
 
-
-sub log_callback {
-  my ($line, $verbose) = @_;
-
-  like($verbose, qr/\d/);
-
-  if ($line =~ /.*wait:timeout reached$/)
-  {
-    $timeout++;
-  }
-}
 
 sub reverse {
   my ($job) = @_;

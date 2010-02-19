@@ -18,8 +18,7 @@ typedef struct
   const char *cb_arg;
 } gearman_worker_cb;
 
-
-SV* _create_worker() {
+static SV* _create_worker() {
   gearman_worker_st *self;
 
   self= gearman_worker_create(NULL);
@@ -35,7 +34,7 @@ SV* _create_worker() {
 
 /* wrapper function to call our actual perl function,
    passed in through cb_arg */
-void *_perl_worker_function_callback(gearman_job_st *job,
+static void *_perl_worker_function_callback(gearman_job_st *job,
                                      void *cb_arg,
                                      size_t *result_size,
                                      gearman_return_t *ret_ptr)
@@ -53,7 +52,7 @@ void *_perl_worker_function_callback(gearman_job_st *job,
   worker_cb= (gearman_worker_cb *)cb_arg;
 
   PUSHMARK(SP);
-  XPUSHs(_bless("Gearman::XS::Job", job));
+  XPUSHs(sv_2mortal(_bless("Gearman::XS::Job", job)));
   if (worker_cb->cb_arg != NULL)
   {
     XPUSHs(sv_2mortal(newSVpv(worker_cb->cb_arg, strlen(worker_cb->cb_arg))));
@@ -66,11 +65,10 @@ void *_perl_worker_function_callback(gearman_job_st *job,
 
   if (SvTRUE(ERRSV))
   {
-    STRLEN n_a;
     fprintf(stderr, "Job: '%s' died with: %s",
-            gearman_job_function_name(job), SvPV(ERRSV, n_a));
+            gearman_job_function_name(job), SvPV_nolen(ERRSV));
     *ret_ptr= GEARMAN_WORK_FAIL;
-    POPs;
+    (void)POPs;
   }
   else
   {
@@ -94,7 +92,7 @@ void *_perl_worker_function_callback(gearman_job_st *job,
   return result;
 }
 
-void _perl_log_fn_callback( const char *line,
+static void _perl_log_fn_callback( const char *line,
                             gearman_verbose_t verbose,
                             void *fn)
 {
@@ -119,7 +117,7 @@ MODULE = Gearman::XS::Worker    PACKAGE = Gearman::XS::Worker
 PROTOTYPES: ENABLE
 
 SV*
-Gearman::XS::WORKER::new()
+Gearman::XS::Worker::new()
   CODE:
     PERL_UNUSED_VAR(CLASS);
     RETVAL = _create_worker();
@@ -130,16 +128,14 @@ gearman_return_t
 add_server(self, ...)
     gearman_xs_worker *self
   PREINIT:
-    const char *host= NULL;
+    char *host= NULL;
     in_port_t port= 0;
   CODE:
-    if( items > 1 )
-    {
-      host= (char *)SvPV(ST(1), PL_na);
+    if( (items > 1) && SvCUR(ST(1)) )
+      host= SvPV_nolen(ST(1));
+    if ( items > 2)
+      port= (in_port_t)SvIV(ST(2));
 
-      if ( items > 2)
-        port= (in_port_t)SvIV(ST(2));
-    }
     RETVAL= gearman_worker_add_server(self, host, port);
   OUTPUT:
     RETVAL
@@ -157,8 +153,12 @@ gearman_return_t
 echo(self, workload)
     gearman_xs_worker *self
     SV * workload
+  PREINIT:
+    const char *w;
+    size_t w_size;
   CODE:
-    RETVAL= gearman_worker_echo(self, SvPV_nolen(workload), SvCUR(workload));
+    w= SvPV(workload, w_size);
+    RETVAL= gearman_worker_echo(self, w, w_size);
   OUTPUT:
     RETVAL
 
@@ -265,7 +265,7 @@ grab_job(self)
     (void)gearman_worker_grab_job(self, &(self->work_job), &ret);
     XPUSHs(sv_2mortal(newSViv(ret)));
     if (ret == GEARMAN_SUCCESS)
-      XPUSHs(_bless("Gearman::XS::Job", &(self->work_job)));
+      XPUSHs(sv_2mortal(_bless("Gearman::XS::Job", &(self->work_job))));
     else
       XPUSHs(&PL_sv_undef);
 
@@ -299,6 +299,16 @@ set_log_fn(self, fn, verbose)
     gearman_verbose_t verbose
   CODE:
     gearman_worker_set_log_fn(self, _perl_log_fn_callback, newSVsv(fn), verbose);
+
+void
+function_exists(self, function_name)
+    gearman_xs_worker *self
+    const char *function_name
+  PPCODE:
+    if (gearman_worker_function_exist(self, function_name, strlen(function_name)))
+      XSRETURN_YES;
+    else
+      XSRETURN_NO;
 
 void
 DESTROY(self)

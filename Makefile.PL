@@ -15,7 +15,7 @@ if (defined $GEARMAN_INCLUDE) {
   $INCLUDES .= " -I$GEARMAN_INCLUDE";
 }
 
-$LIBS .= ' -lgearman -lgearman-server';
+$LIBS .= ' -lgearman';
 
 name 'Gearman-XS';
 all_from 'lib/Gearman/XS.pm';
@@ -27,6 +27,7 @@ makemaker_args(
     OBJECT  => '$(O_FILES)',
     INC     => $INCLUDES,
     LIBS    => $LIBS,
+    # CCFLAGS => '-Werror -Wall -Wundef -Wshadow -Wmissing-prototypes -fdiagnostics-show-option -Wformat=2 -Wstrict-aliasing -Wextra -Wmissing-declarations -Wcast-align -Wswitch-default -Wswitch-enum',
     clean   => {
         FILES => q{
             MANIFEST
@@ -34,7 +35,7 @@ makemaker_args(
     },
 );
 
-cc_files map { "$_\.c" } qw/XS Const Client Worker Job Task Server/;
+cc_files map { "$_\.c" } qw/XS Const Client Worker Job Task/;
 tests 't/*.t';
 
 test_requires 'Test::More';

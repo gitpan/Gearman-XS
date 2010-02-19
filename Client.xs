@@ -9,10 +9,6 @@
 
 #include "gearman_xs.h"
 
-typedef enum {
-  TASK_FN_ARG_CREATED= (1 << 0)
-} gearman_task_context_st_flags;
-
 typedef struct gearman_xs_client {
   gearman_client_st *client;
   /* used for keeping track of task interface callbacks */
@@ -27,21 +23,18 @@ typedef struct gearman_xs_client {
 /* client task context */
 typedef struct
 {
-  gearman_task_context_st_flags flags;
   gearman_client_st *client;
   const char *workload;
 } gearman_task_context_st;
 
 
 /* context free function to free() the workload */
-void _perl_task_free(gearman_task_st *task, void *context)
+static void _perl_task_free(gearman_task_st *task, void *context)
 {
+  PERL_UNUSED_VAR(task);
   gearman_task_context_st *context_st= (gearman_task_context_st *)context;
-  if (context_st->flags == TASK_FN_ARG_CREATED)
-  {
-    Safefree(context_st->workload);
-    Safefree(context_st);
-  }
+  Safefree(context_st->workload);
+  Safefree(context_st);
 }
 
 static gearman_return_t _perl_task_callback(SV * fn, gearman_task_st *task)
@@ -55,7 +48,7 @@ static gearman_return_t _perl_task_callback(SV * fn, gearman_task_st *task)
   SAVETMPS;
 
   PUSHMARK(SP);
-  XPUSHs(_bless("Gearman::XS::Task", task));
+  XPUSHs(sv_2mortal(_bless("Gearman::XS::Task", task)));
   PUTBACK;
 
   count= call_sv(fn, G_SCALAR);
@@ -139,7 +132,7 @@ static gearman_return_t _perl_task_warning_fn(gearman_task_st *task)
   return _perl_task_callback(self->warning_fn, task);
 }
 
-SV* _create_client() {
+static SV* _create_client() {
   gearman_xs_client *self;
 
   Newxz(self, 1, gearman_xs_client);
@@ -173,16 +166,14 @@ gearman_return_t
 add_server(self, ...)
     gearman_xs_client *self
   PREINIT:
-    const char *host= NULL;
+    char *host= NULL;
     in_port_t port= 0;
   CODE:
-    if( items > 1 )
-    {
-      host= (char *)SvPV(ST(1), PL_na);
+    if( (items > 1) && SvCUR(ST(1)) )
+      host= SvPV_nolen(ST(1));
+    if ( items > 2)
+      port= (in_port_t)SvIV(ST(2));
 
-      if ( items > 2)
-        port= (in_port_t)SvIV(ST(2));
-    }
     RETVAL= gearman_client_add_server(self->client, host, port);
   OUTPUT:
     RETVAL
@@ -229,8 +220,12 @@ gearman_return_t
 echo(self, workload)
     gearman_xs_client *self
     SV * workload
+  PREINIT:
+    const char *w;
+    size_t w_size;
   CODE:
-    RETVAL= gearman_client_echo(self->client, SvPV_nolen(workload), SvCUR(workload));
+    w= SvPV(workload, w_size);
+    RETVAL= gearman_client_echo(self->client, w, w_size);
   OUTPUT:
     RETVAL
 
@@ -240,15 +235,18 @@ do(self, function_name, workload, ...)
     const char *function_name
     SV * workload
   PREINIT:
-    const char *unique= NULL;
+    char *unique= NULL;
     gearman_return_t ret;
+    const char *w;
+    size_t w_size;
     void *result;
     size_t result_size;
   PPCODE:
     if (items > 3)
-      unique= (char *)SvPV(ST(3), PL_na);
-    result= gearman_client_do(self->client, function_name, unique, SvPV_nolen(workload),
-                              SvCUR(workload), &result_size, &ret);
+      unique= SvPV_nolen(ST(3));
+    w= SvPV(workload, w_size);
+    result= gearman_client_do(self->client, function_name, unique, w, w_size,
+                                                        &result_size, &ret);
     XPUSHs(sv_2mortal(newSViv(ret)));
     if ((ret == GEARMAN_WORK_DATA) || (ret == GEARMAN_SUCCESS) || (ret == GEARMAN_WORK_WARNING))
     {
@@ -264,17 +262,18 @@ do_high(self, function_name, workload, ...)
     const char *function_name
     SV * workload
   PREINIT:
-    const char *unique= NULL;
+    char *unique= NULL;
     gearman_return_t ret;
-    char *result;
+    const char *w;
+    size_t w_size;
+    void *result;
     size_t result_size;
   PPCODE:
     if (items > 3)
-      unique= (char *)SvPV(ST(3), PL_na);
-    result= (char *)gearman_client_do_high(self->client, function_name, unique,
-                                           SvPV_nolen(workload),
-                                           SvCUR(workload),
-                                           &result_size, &ret);
+      unique= SvPV_nolen(ST(3));
+    w= SvPV(workload, w_size);
+    result= gearman_client_do_high(self->client, function_name, unique, w,
+                                                  w_size, &result_size, &ret);
     XPUSHs(sv_2mortal(newSViv(ret)));
     if ((ret == GEARMAN_WORK_DATA) || (ret == GEARMAN_SUCCESS) || (ret == GEARMAN_WORK_WARNING))
     {
@@ -290,17 +289,18 @@ do_low(self, function_name, workload, ...)
     const char *function_name
     SV * workload
   PREINIT:
-    const char *unique= NULL;
+    char *unique= NULL;
     gearman_return_t ret;
-    char *result;
+    const char *w;
+    size_t w_size;
+    void *result;
     size_t result_size;
   PPCODE:
     if (items > 3)
-      unique= (char *)SvPV(ST(3), PL_na);
-    result= (char *)gearman_client_do_low(self->client, function_name, unique,
-                                          SvPV_nolen(workload),
-                                          SvCUR(workload),
-                                          &result_size, &ret);
+      unique= SvPV_nolen(ST(3));
+    w= SvPV(workload, w_size);
+    result= gearman_client_do_low(self->client, function_name, unique, w,
+                                                  w_size, &result_size, &ret);
     XPUSHs(sv_2mortal(newSViv(ret)));
     if ((ret == GEARMAN_WORK_DATA) || (ret == GEARMAN_SUCCESS) || (ret == GEARMAN_WORK_WARNING))
     {
@@ -317,15 +317,17 @@ do_background(self, function_name, workload, ...)
     SV * workload
   PREINIT:
     char *job_handle;
-    const char *unique= NULL;
+    char *unique= NULL;
+    const char *w;
+    size_t w_size;
     gearman_return_t ret;
   PPCODE:
     if (items > 3)
-      unique= (char *)SvPV(ST(3), PL_na);
-    job_handle= safemalloc(GEARMAN_JOB_HANDLE_SIZE);
-    ret= gearman_client_do_background(self->client, function_name, unique,
-                                      SvPV_nolen(workload), SvCUR(workload),
-                                      job_handle);
+      unique= SvPV_nolen(ST(3));
+    Newxz(job_handle, GEARMAN_JOB_HANDLE_SIZE, char);
+    w= SvPV(workload, w_size);
+    ret= gearman_client_do_background(self->client, function_name, unique, w,
+                                                          w_size, job_handle);
     XPUSHs(sv_2mortal(newSViv(ret)));
     if (ret != GEARMAN_SUCCESS)
     {
@@ -342,15 +344,17 @@ do_high_background(self, function_name, workload, ...)
     SV * workload
   PREINIT:
     char *job_handle;
-    const char *unique= NULL;
+    char *unique= NULL;
+    const char *w;
+    size_t w_size;
     gearman_return_t ret;
   PPCODE:
     if (items > 3)
-      unique= (char *)SvPV(ST(3), PL_na);
-    job_handle= safemalloc(GEARMAN_JOB_HANDLE_SIZE);
+      unique= SvPV_nolen(ST(3));
+    Newxz(job_handle, GEARMAN_JOB_HANDLE_SIZE, char);
+    w= SvPV(workload, w_size);
     ret= gearman_client_do_high_background(self->client, function_name, unique,
-                                           SvPV_nolen(workload),
-                                           SvCUR(workload), job_handle);
+                                                       w, w_size, job_handle);
     XPUSHs(sv_2mortal(newSViv(ret)));
     if (ret != GEARMAN_SUCCESS)
     {
@@ -358,7 +362,7 @@ do_high_background(self, function_name, workload, ...)
       XPUSHs(&PL_sv_undef);
     }
     else
-      XPUSHs(sv_2mortal(newSVpvn(job_handle, (size_t)strlen(job_handle))));
+      XPUSHs(sv_2mortal(newSVpvn(job_handle, strlen(job_handle))));
 
 void
 do_low_background(self, function_name, workload, ...)
@@ -367,15 +371,17 @@ do_low_background(self, function_name, workload, ...)
     SV * workload
   PREINIT:
     char *job_handle;
-    const char *unique= NULL;
+    char *unique= NULL;
+    const char *w;
+    size_t w_size;
     gearman_return_t ret;
   PPCODE:
     if (items > 3)
-      unique= (char *)SvPV(ST(3), PL_na);
-    job_handle= safemalloc(GEARMAN_JOB_HANDLE_SIZE);
+      unique= SvPV_nolen(ST(3));
+    Newxz(job_handle, GEARMAN_JOB_HANDLE_SIZE, char);
+    w= SvPV(workload, w_size);
     ret= gearman_client_do_low_background(self->client, function_name, unique,
-                                          SvPV_nolen(workload),
-                                          SvCUR(workload), job_handle);
+                                                      w, w_size, job_handle);
     XPUSHs(sv_2mortal(newSViv(ret)));
     if (ret != GEARMAN_SUCCESS)
     {
@@ -392,23 +398,24 @@ add_task(self, function_name, workload, ...)
     SV * workload
   PREINIT:
     gearman_task_st *task;
-    const char *unique= NULL;
+    char *unique= NULL;
     gearman_return_t ret;
     gearman_task_context_st *context;
     const char *w;
   PPCODE:
     if (items > 3)
-      unique= (char *)SvPV(ST(3), PL_na);
+      unique= SvPV_nolen(ST(3));
     w= savesvpv(workload);
     Newxz(context, 1, gearman_task_context_st);
-    context->flags= TASK_FN_ARG_CREATED;
     context->client= self->client;
     context->workload= w;
+    /*  SvCUR is safe here even for non-STRING types because savesvpv()
+        magically changes workload to a string SV
+    */ 
     task= gearman_client_add_task(self->client, NULL, context, function_name,
-                                  unique, w, SvCUR(workload), &ret);
-
+                                            unique, w, SvCUR(workload), &ret);
     XPUSHs(sv_2mortal(newSViv(ret)));
-    XPUSHs(_bless("Gearman::XS::Task", task));
+    XPUSHs(sv_2mortal(_bless("Gearman::XS::Task", task)));
 
 void
 add_task_high(self, function_name, workload, ...)
@@ -417,16 +424,15 @@ add_task_high(self, function_name, workload, ...)
     SV * workload
   PREINIT:
     gearman_task_st *task;
-    const char *unique= NULL;
+    char *unique= NULL;
     gearman_return_t ret;
     gearman_task_context_st *context;
     const char *w;
   PPCODE:
     if (items > 3)
-      unique= (char *)SvPV(ST(3), PL_na);
+      unique= SvPV_nolen(ST(3));
     w= savesvpv(workload);
     Newxz(context, 1, gearman_task_context_st);
-    context->flags= TASK_FN_ARG_CREATED;
     context->client= self->client;
     context->workload= w;
     task= gearman_client_add_task_high(self->client, NULL, context,
@@ -434,7 +440,7 @@ add_task_high(self, function_name, workload, ...)
                                        SvCUR(workload), &ret);
 
     XPUSHs(sv_2mortal(newSViv(ret)));
-    XPUSHs(_bless("Gearman::XS::Task", task));
+    XPUSHs(sv_2mortal(_bless("Gearman::XS::Task", task)));
 
 void
 add_task_low(self, function_name, workload, ...)
@@ -443,16 +449,15 @@ add_task_low(self, function_name, workload, ...)
     SV * workload
   PREINIT:
     gearman_task_st *task;
-    const char *unique= NULL;
+    char *unique= NULL;
     gearman_return_t ret;
     gearman_task_context_st *context;
     const char *w;
   PPCODE:
     if (items > 3)
-      unique= (char *)SvPV(ST(3), PL_na);
+      unique= SvPV_nolen(ST(3));
     w= savesvpv(workload);
     Newxz(context, 1, gearman_task_context_st);
-    context->flags= TASK_FN_ARG_CREATED;
     context->client= self->client;
     context->workload= w;
     task= gearman_client_add_task_low(self->client, NULL, context,
@@ -460,7 +465,7 @@ add_task_low(self, function_name, workload, ...)
                                       SvCUR(workload), &ret);
 
     XPUSHs(sv_2mortal(newSViv(ret)));
-    XPUSHs(_bless("Gearman::XS::Task", task));
+    XPUSHs(sv_2mortal(_bless("Gearman::XS::Task", task)));
 
 void
 add_task_background(self, function_name, workload, ...)
@@ -469,16 +474,15 @@ add_task_background(self, function_name, workload, ...)
     SV * workload
   PREINIT:
     gearman_task_st *task;
-    const char *unique= NULL;
+    char *unique= NULL;
     gearman_return_t ret;
     gearman_task_context_st *context;
     const char *w;
   PPCODE:
     if (items > 3)
-      unique= (char *)SvPV(ST(3), PL_na);
+      unique= SvPV_nolen(ST(3));
     w= savesvpv(workload);
     Newxz(context, 1, gearman_task_context_st);
-    context->flags= TASK_FN_ARG_CREATED;
     context->client= self->client;
     context->workload= w;
     task= gearman_client_add_task_background(self->client, NULL, context,
@@ -486,7 +490,7 @@ add_task_background(self, function_name, workload, ...)
                                              SvCUR(workload), &ret);
 
     XPUSHs(sv_2mortal(newSViv(ret)));
-    XPUSHs(_bless("Gearman::XS::Task", task));
+    XPUSHs(sv_2mortal(_bless("Gearman::XS::Task", task)));
 
 void
 add_task_high_background(self, function_name, workload, ...)
@@ -495,16 +499,15 @@ add_task_high_background(self, function_name, workload, ...)
     SV * workload
   PREINIT:
     gearman_task_st *task;
-    const char *unique= NULL;
+    char *unique= NULL;
     gearman_return_t ret;
     gearman_task_context_st *context;
     const char *w;
   PPCODE:
     if (items > 3)
-      unique= (char *)SvPV(ST(3), PL_na);
+      unique= SvPV_nolen(ST(3));
     w= savesvpv(workload);
     Newxz(context, 1, gearman_task_context_st);
-    context->flags= TASK_FN_ARG_CREATED;
     context->client= self->client;
     context->workload= w;
     task= gearman_client_add_task_high_background(self->client, NULL, context,
@@ -512,7 +515,7 @@ add_task_high_background(self, function_name, workload, ...)
                                                   SvCUR(workload), &ret);
 
     XPUSHs(sv_2mortal(newSViv(ret)));
-    XPUSHs(_bless("Gearman::XS::Task", task));
+    XPUSHs(sv_2mortal(_bless("Gearman::XS::Task", task)));
 
 void
 add_task_low_background(self, function_name, workload, ...)
@@ -521,16 +524,15 @@ add_task_low_background(self, function_name, workload, ...)
     SV * workload
   PREINIT:
     gearman_task_st *task;
-    const char *unique= NULL;
+    char *unique= NULL;
     gearman_return_t ret;
     gearman_task_context_st *context;
     const char *w;
   PPCODE:
     if (items > 3)
-      unique= (char *)SvPV(ST(3), PL_na);
+      unique= SvPV_nolen(ST(3));
     w= savesvpv(workload);
     Newxz(context, 1, gearman_task_context_st);
-    context->flags= TASK_FN_ARG_CREATED;
     context->client= self->client;
     context->workload= w;
     task= gearman_client_add_task_low_background(self->client, NULL, context,
@@ -538,7 +540,7 @@ add_task_low_background(self, function_name, workload, ...)
                                                  SvCUR(workload), &ret);
 
     XPUSHs(sv_2mortal(newSViv(ret)));
-    XPUSHs(_bless("Gearman::XS::Task", task));
+    XPUSHs(sv_2mortal(_bless("Gearman::XS::Task", task)));
 
 gearman_return_t
 run_tasks(self)
@@ -616,7 +618,7 @@ do_status(self)
     XPUSHs(sv_2mortal(newSVuv(denominator)));
 
 void
-job_status(self, job_handle="")
+job_status(self, job_handle= NULL)
     gearman_xs_client *self
     const char *job_handle
   PREINIT:
@@ -667,11 +669,10 @@ add_task_status(self, job_handle)
     gearman_task_context_st *context;
   PPCODE:
     Newxz(context, 1, gearman_task_context_st);
-    context->flags= TASK_FN_ARG_CREATED;
     context->client= self->client;
     task= gearman_client_add_task_status(self->client, NULL, context, job_handle, &ret);
     XPUSHs(sv_2mortal(newSViv(ret)));
-    XPUSHs(_bless("Gearman::XS::Task", task));
+    XPUSHs(sv_2mortal(_bless("Gearman::XS::Task", task)));
 
 void
 clear_fn(self)
@@ -684,4 +685,16 @@ DESTROY(self)
     gearman_xs_client *self
   CODE:
     gearman_client_free(self->client);
+    if (self->created_fn)
+      sv_free(self->created_fn);
+    if (self->data_fn)
+      sv_free(self->data_fn);
+    if (self->complete_fn)
+      sv_free(self->complete_fn);
+    if (self->fail_fn)
+      sv_free(self->fail_fn);
+    if (self->status_fn)
+      sv_free(self->status_fn);
+    if (self->warning_fn)
+      sv_free(self->warning_fn);
     Safefree(self);

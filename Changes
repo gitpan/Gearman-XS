@@ -1,3 +1,11 @@
+0.8 - 2010-02-19
+ * fix bug #507781 (Memory leak - GC)
+ * fix non-string input to do* functions
+ * remove Gearman::XS::Server
+ * add worker function function_exists()
+ * add Gearman::XS::strerror
+ * requires libgearman 0.12 or later
+
 0.7 - 2009-11-26
  * add worker set_log_fn()
  * new Gearman::XS::Server

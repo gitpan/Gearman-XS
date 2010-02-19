@@ -9,7 +9,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 33;
+use Test::More tests => 34;
 
 # import constants
 use Gearman::XS qw(:constants);
@@ -20,23 +20,15 @@ my ($ret, $job, $job_handle);
 is(GEARMAN_SUCCESS, 0);
 is(GEARMAN_WORK_FAIL, 24);
 
-# server
-my $s = Gearman::XS::Server->new();
-isa_ok($s, 'Gearman::XS::Server');
-
-$s->set_backlog(2);
-$s->set_job_retries(3);
-$s->set_threads(2);
-
 # client
 my $client = new Gearman::XS::Client;
 isa_ok($client, 'Gearman::XS::Client');
 
-$client->add_options(GEARMAN_CLIENT_TASK_IN_USE);
-ok($client->options() & GEARMAN_CLIENT_TASK_IN_USE);
+$client->add_options(GEARMAN_CLIENT_NON_BLOCKING);
+ok($client->options() & GEARMAN_CLIENT_NON_BLOCKING);
 
-$client->remove_options(GEARMAN_CLIENT_TASK_IN_USE);
-ok(!($client->options() & GEARMAN_CLIENT_TASK_IN_USE));
+$client->remove_options(GEARMAN_CLIENT_NON_BLOCKING);
+ok(!($client->options() & GEARMAN_CLIENT_NON_BLOCKING));
 
 $client->set_options(GEARMAN_CLIENT_UNBUFFERED_RESULT);
 ok($client->options() & GEARMAN_CLIENT_UNBUFFERED_RESULT);
@@ -48,7 +40,7 @@ is($client->timeout(), -1);
 $client->set_timeout(10000);
 is($client->timeout(), 10000);
 
-is($client->error(), '');
+is($client->error(), undef);
 
 is($client->add_server(), GEARMAN_SUCCESS);
 is($client->add_server('localhost'), GEARMAN_SUCCESS);
@@ -75,7 +67,7 @@ is($worker->timeout(), GEARMAN_WORKER_WAIT_TIMEOUT);
 $worker->set_timeout(1000);
 is($worker->timeout(), 1000);
 
-is($worker->error(), '');
+is($worker->error(), undef);
 
 is($worker->add_server(), GEARMAN_SUCCESS);
 is($worker->add_server('127.0.0.1'), GEARMAN_SUCCESS);
@@ -92,10 +84,12 @@ $worker->add_server('213.3.4.5', 61333);
 is($worker->work(), GEARMAN_NO_REGISTERED_FUNCTIONS);
 ($ret, $job) = $worker->grab_job();
 is($ret, GEARMAN_NO_REGISTERED_FUNCTIONS);
+is(Gearman::XS::strerror($ret), 'NO_REGISTERED_FUNCTIONS');
 is($job, undef);
 
 # no connection
 ($ret, $job_handle) = $client->do_background("reverse", 'do background', 'unique');
 is($ret, GEARMAN_COULD_NOT_CONNECT);
+is(Gearman::XS::strerror($ret), 'COULD_NOT_CONNECT');
 is($job_handle, undef);
-is($client->error(), 'gearman_con_flush:could not connect');
+is($client->error(), 'gearman_connection_flush:could not connect');

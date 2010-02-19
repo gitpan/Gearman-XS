@@ -23,7 +23,7 @@ workload(self)
   OUTPUT:
     RETVAL
 
-char *
+const char *
 handle(self)
     gearman_xs_job *self
   CODE:
@@ -61,8 +61,12 @@ gearman_return_t
 send_data(self, data)
     gearman_xs_job *self
     SV * data
+  PREINIT:
+    const char *d;
+    size_t d_size;
   CODE:
-    RETVAL= gearman_job_send_data(self, SvPV_nolen(data), SvCUR(data));
+    d= SvPV(data, d_size);
+    RETVAL= gearman_job_send_data(self, d, d_size);
   OUTPUT:
     RETVAL
 
@@ -78,8 +82,12 @@ gearman_return_t
 send_complete(self, result)
     gearman_xs_job *self
     SV * result
+  PREINIT:
+    const char *r;
+    size_t r_size;
   CODE:
-    RETVAL= gearman_job_send_complete(self, SvPV_nolen(result), SvCUR(result));
+    r= SvPV(result, r_size);
+    RETVAL= gearman_job_send_complete(self, r, r_size);
   OUTPUT:
     RETVAL
 
@@ -87,7 +95,11 @@ gearman_return_t
 send_warning(self, warning)
     gearman_xs_job *self
     SV * warning
+  PREINIT:
+    const char *w;
+    size_t w_size;
   CODE:
-    RETVAL= gearman_job_send_warning(self, SvPV_nolen(warning), SvCUR(warning));
+    w= SvPV(warning, w_size);
+    RETVAL= gearman_job_send_warning(self, w, w_size);
   OUTPUT:
     RETVAL

@@ -11,7 +11,6 @@ gearman_xs_client *	T_GCLIENT
 gearman_xs_job *	T_GJOB
 gearman_xs_task *	T_GTASK
 gearman_xs_worker *	T_GWORKER
-gearman_xs_server *	T_GSERVER
 gearman_return_t	T_ENUM
 gearman_worker_options_t	T_ENUM
 gearman_client_options_t  T_ENUM
@@ -29,8 +28,6 @@ T_GTASK
   $var = XS_STATE(gearman_xs_task*, $arg);
 T_GWORKER
   $var = XS_STATE(gearman_xs_worker*, $arg);
-T_GSERVER
-  $var = XS_STATE(gearman_xs_server*, $arg);
 
 OUTPUT
 T_GCLIENT
@@ -40,6 +37,4 @@ T_GJOB
 T_GTASK
   XS_STRUCT2OBJ($arg, CLASS, $var);
 T_GWORKER
-  XS_STRUCT2OBJ($arg, CLASS, $var);
-T_GSERVER
   XS_STRUCT2OBJ($arg, CLASS, $var);

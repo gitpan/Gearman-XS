@@ -6,7 +6,7 @@
 # it under the same terms as Perl itself, either Perl version 5.8.9 or,
 # at your option, any later version of Perl 5 you may have available.
 
-use Test::More tests => 6;
+use Test::More tests => 5;
 
 BEGIN {
   use_ok('Gearman::XS');
@@ -14,7 +14,6 @@ BEGIN {
   use_ok('Gearman::XS::Job');
   use_ok('Gearman::XS::Task');
   use_ok('Gearman::XS::Worker');
-  use_ok('Gearman::XS::Server');
 }
 
 diag( "Testing Gearman::XS $Gearman::XS::VERSION" );

@@ -82,12 +82,6 @@ while (1)
   last;
 }
 
-$ret = $client->echo($ARGV[0]);
-if ($ret != GEARMAN_SUCCESS)
-{
-  printf(STDERR "%s\n", $client->error());
-}
-
 exit;
 
 sub usage {

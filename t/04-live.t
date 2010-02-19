@@ -15,7 +15,11 @@ use FindBin qw( $Bin );
 use lib ("$Bin/lib", "$Bin/../lib");
 use TestLib;
 
-plan tests => 154;
+if ( not $ENV{GEARMAN_LIVE_TEST} ) {
+  plan( skip_all => 'Set $ENV{GEARMAN_LIVE_TEST} to run this test' );
+}
+
+plan tests => 156;
 
 my ($ret, $result, $job_handle, $task);
 
@@ -31,18 +35,18 @@ my $tasks     = 0;
 my $client= new Gearman::XS::Client;
 isa_ok($client, 'Gearman::XS::Client');
 
-is($client->error(), '');
+is($client->error(), undef);
 is($client->add_server('127.0.0.1', 4731), GEARMAN_SUCCESS);
 
 # worker
 my $worker= new Gearman::XS::Worker;
 isa_ok($worker, 'Gearman::XS::Worker');
 
-is($worker->error(), '');
+is($worker->error(), undef);
 is($worker->add_server('127.0.0.1', 4731), GEARMAN_SUCCESS);
 
 my $testlib = new TestLib;
-$testlib->run_test_server();
+$testlib->run_gearmand();
 $testlib->run_test_worker();
 sleep(2);
 
@@ -70,6 +74,11 @@ is_deeply(\%hash, Storable::thaw($result));
 ($ret, $result) = $client->do("reverse", 'do unique', 'unique');
 is($ret, GEARMAN_SUCCESS);
 is($result, reverse('do unique'));
+
+# integer input
+($ret, $result) = $client->do("reverse", 12345, 'unique');
+is($ret, GEARMAN_SUCCESS);
+is($result, reverse(12345));
 
 ($ret, $result) = $client->do_high("reverse", 'do high');
 is($ret, GEARMAN_SUCCESS);
@@ -136,7 +145,7 @@ is($task->denominator(), 0);
 like($task->unique(), qr/\w+-\w+-\w+-\w+-\w+/);
 
 # test warning callback
-($ret, $task) = $client->add_task("warning", "I'll be dead");
+($ret, $task) = $client->add_task("warning", "warning test");
 is($ret, GEARMAN_SUCCESS);
 isa_ok($task, 'Gearman::XS::Task');
 
@@ -251,7 +260,6 @@ is($client->run_tasks(), GEARMAN_SUCCESS);
 
 is($created, 12);
 is($completed, 7);
-
 
 sub created_cb {
   my ($task) = @_;
