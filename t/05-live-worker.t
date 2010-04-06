@@ -1,5 +1,5 @@
 # Gearman Perl front end
-# Copyright (C) 2009 Dennis Schoen
+# Copyright (C) 2009-2010 Dennis Schoen
 # All rights reserved.
 #
 # This library is free software; you can redistribute it and/or modify

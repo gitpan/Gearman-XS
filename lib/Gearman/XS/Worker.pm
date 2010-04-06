@@ -1,5 +1,5 @@
 # Gearman Perl front end
-# Copyright (C) 2009 Dennis Schoen
+# Copyright (C) 2009-2010 Dennis Schoen
 # All rights reserved.
 #
 # This library is free software; you can redistribute it and/or modify
@@ -11,7 +11,7 @@ package Gearman::XS::Worker;
 use strict;
 use warnings;
 
-our $VERSION= '0.8';
+our $VERSION= '0.9';
 
 use Gearman::XS;
 
@@ -171,7 +171,7 @@ Any in libgearman plus many others of my own.
 
 =head1 COPYRIGHT
 
-Copyright (C) 2009 Dennis Schoen
+Copyright (C) 2009-2010 Dennis Schoen
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.9 or,

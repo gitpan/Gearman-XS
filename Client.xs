@@ -1,5 +1,5 @@
 /* Gearman Perl front end
- * Copyright (C) 2009 Dennis Schoen
+ * Copyright (C) 2009-2010 Dennis Schoen
  * All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify
@@ -225,7 +225,7 @@ echo(self, workload)
     size_t w_size;
   CODE:
     w= SvPV(workload, w_size);
-    RETVAL= gearman_client_echo(self->client, w, w_size);
+    RETVAL= gearman_client_echo(self->client, w, w_size+1);
   OUTPUT:
     RETVAL
 
@@ -245,12 +245,12 @@ do(self, function_name, workload, ...)
     if (items > 3)
       unique= SvPV_nolen(ST(3));
     w= SvPV(workload, w_size);
-    result= gearman_client_do(self->client, function_name, unique, w, w_size,
-                                                        &result_size, &ret);
+    result= gearman_client_do(self->client, function_name, unique, w, w_size+1,
+                                                          &result_size, &ret);
     XPUSHs(sv_2mortal(newSViv(ret)));
     if ((ret == GEARMAN_WORK_DATA) || (ret == GEARMAN_SUCCESS) || (ret == GEARMAN_WORK_WARNING))
     {
-      XPUSHs(sv_2mortal(newSVpvn(result, result_size)));
+      XPUSHs(sv_2mortal(newSVpvn(result, result_size-1)));
       Safefree(result);
     }
     else
@@ -273,11 +273,11 @@ do_high(self, function_name, workload, ...)
       unique= SvPV_nolen(ST(3));
     w= SvPV(workload, w_size);
     result= gearman_client_do_high(self->client, function_name, unique, w,
-                                                  w_size, &result_size, &ret);
+                                                w_size+1, &result_size, &ret);
     XPUSHs(sv_2mortal(newSViv(ret)));
     if ((ret == GEARMAN_WORK_DATA) || (ret == GEARMAN_SUCCESS) || (ret == GEARMAN_WORK_WARNING))
     {
-      XPUSHs(sv_2mortal(newSVpvn(result, result_size)));
+      XPUSHs(sv_2mortal(newSVpvn(result, result_size-1)));
       Safefree(result);
     }
     else
@@ -300,11 +300,11 @@ do_low(self, function_name, workload, ...)
       unique= SvPV_nolen(ST(3));
     w= SvPV(workload, w_size);
     result= gearman_client_do_low(self->client, function_name, unique, w,
-                                                  w_size, &result_size, &ret);
+                                                w_size+1, &result_size, &ret);
     XPUSHs(sv_2mortal(newSViv(ret)));
     if ((ret == GEARMAN_WORK_DATA) || (ret == GEARMAN_SUCCESS) || (ret == GEARMAN_WORK_WARNING))
     {
-      XPUSHs(sv_2mortal(newSVpvn(result, result_size)));
+      XPUSHs(sv_2mortal(newSVpvn(result, result_size-1)));
       Safefree(result);
     }
     else
@@ -327,7 +327,7 @@ do_background(self, function_name, workload, ...)
     Newxz(job_handle, GEARMAN_JOB_HANDLE_SIZE, char);
     w= SvPV(workload, w_size);
     ret= gearman_client_do_background(self->client, function_name, unique, w,
-                                                          w_size, job_handle);
+                                                        w_size+1, job_handle);
     XPUSHs(sv_2mortal(newSViv(ret)));
     if (ret != GEARMAN_SUCCESS)
     {
@@ -335,7 +335,7 @@ do_background(self, function_name, workload, ...)
       XPUSHs(&PL_sv_undef);
     }
     else
-      XPUSHs(sv_2mortal(newSVpvn(job_handle, strlen(job_handle))));
+      XPUSHs(sv_2mortal(newSVpv(job_handle, 0)));
 
 void
 do_high_background(self, function_name, workload, ...)
@@ -354,7 +354,7 @@ do_high_background(self, function_name, workload, ...)
     Newxz(job_handle, GEARMAN_JOB_HANDLE_SIZE, char);
     w= SvPV(workload, w_size);
     ret= gearman_client_do_high_background(self->client, function_name, unique,
-                                                       w, w_size, job_handle);
+                                                      w, w_size+1, job_handle);
     XPUSHs(sv_2mortal(newSViv(ret)));
     if (ret != GEARMAN_SUCCESS)
     {
@@ -362,7 +362,7 @@ do_high_background(self, function_name, workload, ...)
       XPUSHs(&PL_sv_undef);
     }
     else
-      XPUSHs(sv_2mortal(newSVpvn(job_handle, strlen(job_handle))));
+      XPUSHs(sv_2mortal(newSVpv(job_handle, 0)));
 
 void
 do_low_background(self, function_name, workload, ...)
@@ -381,7 +381,7 @@ do_low_background(self, function_name, workload, ...)
     Newxz(job_handle, GEARMAN_JOB_HANDLE_SIZE, char);
     w= SvPV(workload, w_size);
     ret= gearman_client_do_low_background(self->client, function_name, unique,
-                                                      w, w_size, job_handle);
+                                                      w, w_size+1, job_handle);
     XPUSHs(sv_2mortal(newSViv(ret)));
     if (ret != GEARMAN_SUCCESS)
     {
@@ -389,7 +389,7 @@ do_low_background(self, function_name, workload, ...)
       XPUSHs(&PL_sv_undef);
     }
     else
-      XPUSHs(sv_2mortal(newSVpvn(job_handle, strlen(job_handle))));
+      XPUSHs(sv_2mortal(newSVpv(job_handle, 0)));
 
 void
 add_task(self, function_name, workload, ...)

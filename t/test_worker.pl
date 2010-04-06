@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 #
 # Gearman Perl front end
-# Copyright (C) 2009 Dennis Schoen
+# Copyright (C) 2009-2010 Dennis Schoen
 # All rights reserved.
 # 
 # This library is free software; you can redistribute it and/or modify
@@ -109,12 +109,16 @@ sub fail {
   my $workload= $job->workload();
 
   $job->send_fail();
+
+  return;
 }
 
 sub complete {
   my ($job) = @_;
 
   $job->send_complete($job->workload());
+
+  return;
 }
 
 sub undef_return {

@@ -1,5 +1,5 @@
 /* Gearman Perl front end
- * Copyright (C) 2009 Dennis Schoen
+ * Copyright (C) 2009-2010 Dennis Schoen
  * All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify
@@ -41,7 +41,7 @@ static void *_perl_worker_function_callback(gearman_job_st *job,
 {
   gearman_worker_cb *worker_cb;
   int count;
-  char *result= NULL;
+  void *result= NULL;
   SV * result_sv;
 
   dSP;
@@ -78,8 +78,8 @@ static void *_perl_worker_function_callback(gearman_job_st *job,
     result_sv= POPs;
     if (SvOK(result_sv))
     {
-      result=savesvpv(result_sv);
-      *result_size= SvCUR(result_sv);
+      result= savesvpv(result_sv);
+      *result_size= SvCUR(result_sv)+1;        
     }
 
     *ret_ptr= GEARMAN_SUCCESS;
@@ -158,7 +158,7 @@ echo(self, workload)
     size_t w_size;
   CODE:
     w= SvPV(workload, w_size);
-    RETVAL= gearman_worker_echo(self, w, w_size);
+    RETVAL= gearman_worker_echo(self, w, w_size+1);
   OUTPUT:
     RETVAL
 

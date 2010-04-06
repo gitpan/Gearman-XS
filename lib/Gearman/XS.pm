@@ -1,5 +1,5 @@
 # Gearman Perl front end
-# Copyright (C) 2009 Dennis Schoen
+# Copyright (C) 2009-2010 Dennis Schoen
 # All rights reserved.
 #
 # This library is free software; you can redistribute it and/or modify
@@ -160,7 +160,7 @@ our @EXPORT_OK = @constants;
 
 our @ISA;
 BEGIN {
-  our $VERSION= '0.8';
+  our $VERSION= '0.9';
 
   eval {
     require XSLoader;
@@ -202,7 +202,7 @@ Any in libgearman plus many others of my own.
 
 =head1 COPYRIGHT
 
-Copyright (C) 2009 Dennis Schoen
+Copyright (C) 2009-2010 Dennis Schoen
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.9 or,

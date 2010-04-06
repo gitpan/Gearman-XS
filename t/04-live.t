@@ -1,5 +1,5 @@
 # Gearman Perl front end
-# Copyright (C) 2009 Dennis Schoen
+# Copyright (C) 2009-2010 Dennis Schoen
 # All rights reserved.
 #
 # This library is free software; you can redistribute it and/or modify
@@ -19,7 +19,7 @@ if ( not $ENV{GEARMAN_LIVE_TEST} ) {
   plan( skip_all => 'Set $ENV{GEARMAN_LIVE_TEST} to run this test' );
 }
 
-plan tests => 156;
+plan tests => 160;
 
 my ($ret, $result, $job_handle, $task);
 
@@ -64,12 +64,17 @@ is($result, reverse('do'));
 is($ret, GEARMAN_SUCCESS);
 is($result, 7);
 
+# this tests perls DOUBLE return type
+($ret, $result) = $client->do("add", '3.7 4.3');
+is($ret, GEARMAN_SUCCESS);
+is($result, 8);
+
 # test binary data
 my %hash= (key => 'value');
 my $storable= Storable::nfreeze(\%hash);
 ($ret, $result) = $client->do("storable", $storable);
 is($ret, GEARMAN_SUCCESS);
-is_deeply(\%hash, Storable::thaw($result));
+is_deeply(Storable::thaw($result), \%hash);
 
 ($ret, $result) = $client->do("reverse", 'do unique', 'unique');
 is($ret, GEARMAN_SUCCESS);
@@ -87,6 +92,11 @@ is($result, reverse('do high'));
 ($ret, $result) = $client->do_low("reverse", 'do low');
 is($ret, GEARMAN_SUCCESS);
 is($result, reverse('do low'));
+
+# working with empty strings
+($ret, $result) = $client->do("reverse", '');
+is($ret, GEARMAN_SUCCESS);
+is($result, '');
 
 # single async task interface
 ($ret, $job_handle) = $client->do_background("reverse", 'do background', 'unique');

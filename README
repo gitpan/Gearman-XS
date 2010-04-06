@@ -1,4 +1,4 @@
-Gearman::XS version 0.8
+Gearman::XS version 0.9
 ==============================
 
 This is a Perl front end for the Gearman C library. It aims to provide a
@@ -39,7 +39,7 @@ Visit http://launchpad.net/gearmanxs for more information
 
 COPYRIGHT AND LICENCE
 
-Copyright (C) 2009 Dennis Schoen
+Copyright (C) 2009-2010 Dennis Schoen
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.9 or,

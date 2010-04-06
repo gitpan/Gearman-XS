@@ -1,5 +1,5 @@
 /* Gearman Perl front end
- * Copyright (C) 2009 Dennis Schoen
+ * Copyright (C) 2009-2010 Dennis Schoen
  * All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify
@@ -27,7 +27,7 @@ SV *
 data(self)
     gearman_xs_task *self
   CODE:
-    RETVAL= newSVpvn(gearman_task_data(self), gearman_task_data_size(self));
+    RETVAL= newSVpvn(gearman_task_data(self), gearman_task_data_size(self)-1);
   OUTPUT:
     RETVAL
 
@@ -35,7 +35,7 @@ int
 data_size(self)
     gearman_xs_task *self
   CODE:
-    RETVAL= gearman_task_data_size(self);
+    RETVAL= gearman_task_data_size(self)-1;
   OUTPUT:
     RETVAL
 
