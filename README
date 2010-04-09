@@ -1,4 +1,4 @@
-Gearman::XS version 0.9
+Gearman::XS version 0.10
 ==============================
 
 This is a Perl front end for the Gearman C library. It aims to provide a

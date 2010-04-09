@@ -19,7 +19,7 @@ SV *
 workload(self)
     gearman_xs_job *self
   CODE:
-    RETVAL= newSVpvn(gearman_job_workload(self), gearman_job_workload_size(self)-1);
+    RETVAL= newSVpvn(gearman_job_workload(self), gearman_job_workload_size(self));
   OUTPUT:
     RETVAL
 
@@ -66,7 +66,7 @@ send_data(self, data)
     size_t d_size;
   CODE:
     d= SvPV(data, d_size);
-    RETVAL= gearman_job_send_data(self, d, d_size+1);
+    RETVAL= gearman_job_send_data(self, d, d_size);
   OUTPUT:
     RETVAL
 
@@ -87,7 +87,7 @@ send_complete(self, result)
     size_t r_size;
   CODE:
     r= SvPV(result, r_size);
-    RETVAL= gearman_job_send_complete(self, r, r_size+1);
+    RETVAL= gearman_job_send_complete(self, r, r_size);
   OUTPUT:
     RETVAL
 
@@ -100,6 +100,6 @@ send_warning(self, warning)
     size_t w_size;
   CODE:
     w= SvPV(warning, w_size);
-    RETVAL= gearman_job_send_warning(self, w, w_size+1);
+    RETVAL= gearman_job_send_warning(self, w, w_size);
   OUTPUT:
     RETVAL

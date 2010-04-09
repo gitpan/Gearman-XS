@@ -79,7 +79,7 @@ static void *_perl_worker_function_callback(gearman_job_st *job,
     if (SvOK(result_sv))
     {
       result= savesvpv(result_sv);
-      *result_size= SvCUR(result_sv)+1;        
+      *result_size= SvCUR(result_sv);
     }
 
     *ret_ptr= GEARMAN_SUCCESS;
@@ -158,7 +158,7 @@ echo(self, workload)
     size_t w_size;
   CODE:
     w= SvPV(workload, w_size);
-    RETVAL= gearman_worker_echo(self, w, w_size+1);
+    RETVAL= gearman_worker_echo(self, w, w_size);
   OUTPUT:
     RETVAL
 

@@ -27,7 +27,7 @@ SV *
 data(self)
     gearman_xs_task *self
   CODE:
-    RETVAL= newSVpvn(gearman_task_data(self), gearman_task_data_size(self)-1);
+    RETVAL= newSVpvn(gearman_task_data(self), gearman_task_data_size(self));
   OUTPUT:
     RETVAL
 
@@ -35,7 +35,7 @@ int
 data_size(self)
     gearman_xs_task *self
   CODE:
-    RETVAL= gearman_task_data_size(self)-1;
+    RETVAL= gearman_task_data_size(self);
   OUTPUT:
     RETVAL
 
