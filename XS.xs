@@ -38,6 +38,17 @@ void *_perl_malloc(size_t size, void *arg)
   return safemalloc(size);
 }
 
+/* get the stringified version of the SV without a trailing NULL byte */
+void *_get_string(SV *sv, size_t *size)
+{
+  void *string= NULL;
+  SvPV_nolen(sv); // this is necessary for SvCUR to get the stringified length
+  *size= SvCUR(sv);
+  Newxz(string, *size, char);
+  memcpy(string, SvPV_nolen(sv), *size);
+  return string;
+}
+
 /* We need these declarations with "C" linkage */
 
 #ifdef __cplusplus

@@ -1,3 +1,8 @@
+0.11 - 2010-08-18
+ * remove build warnings with newer Module::Install versions
+ * replace savesvpv() with custom function to not pass around trailling NULL
+   bytes (also fixes unrelated #619309)
+
 0.10 - 2010-04-09
  * fix bug #559240 (broken compatibility with non-Gearman::XS clients)
  * this actually opens bug #525826 again as I currently don't see a way to fix
@@ -22,7 +27,7 @@
  * depends on libgearman 0.10 or later
  * API changes:
    client/worker set_options() now only gets one parameter
-  
+
    job functions renamed:
     status()   -> send_status()
     data()     -> send_data()
@@ -33,7 +38,7 @@
    task functions renamed:
     function() -> function_name()
     uuid()     -> unique()
-   
+
  * add client function add_task_status()
  * add client/worker options(), add_options() and remove_options() functions
  * add client/worker timeout() and set_timeout() functions
@@ -53,7 +58,7 @@
  * add worker grab_job() function
  * add job complete() function
  * add job warning() function and ability to set a client warning callback function
- 
+
 0.3 - 2009-07-14
  * Fix freeing of job handle on connection error
  * improve test suite (patch by Johannes Plunien)

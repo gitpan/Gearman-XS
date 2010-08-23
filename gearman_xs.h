@@ -17,5 +17,6 @@
 SV *_bless(const char *class, void *obj);
 void _perl_free(void *ptr, void *arg);
 void *_perl_malloc(size_t size, void *arg);
+void *_get_string(SV *sv, size_t *size);
 
 #endif /* __GEARMAN_XS_H__ */

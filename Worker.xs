@@ -78,8 +78,7 @@ static void *_perl_worker_function_callback(gearman_job_st *job,
     result_sv= POPs;
     if (SvOK(result_sv))
     {
-      result= savesvpv(result_sv);
-      *result_size= SvCUR(result_sv);
+      result= _get_string(result_sv, result_size);
     }
 
     *ret_ptr= GEARMAN_SUCCESS;

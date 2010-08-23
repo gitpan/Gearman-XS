@@ -24,7 +24,6 @@ no_index directory => 'examples';
 can_cc or die "This module requires a C compiler";
 
 makemaker_args(
-    OBJECT  => '$(O_FILES)',
     INC     => $INCLUDES,
     LIBS    => $LIBS,
     # CCFLAGS => '-Werror -Wall -Wundef -Wshadow -Wmissing-prototypes -fdiagnostics-show-option -Wformat=2 -Wstrict-aliasing -Wextra -Wmissing-declarations -Wcast-align -Wswitch-default -Wswitch-enum',
@@ -40,6 +39,4 @@ tests 't/*.t';
 
 test_requires 'Test::More';
 test_requires 'Storable';
-use_test_base;
-auto_install;
 WriteAll;
