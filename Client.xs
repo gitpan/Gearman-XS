@@ -187,6 +187,12 @@ add_servers(self, servers)
   OUTPUT:
     RETVAL
 
+void
+remove_servers(self)
+    gearman_xs_client *self
+  CODE:
+    gearman_client_remove_servers(self->client);
+
 gearman_client_options_t
 options(self)
     gearman_xs_client *self

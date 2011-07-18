@@ -47,6 +47,8 @@ is($client->add_server('localhost'), GEARMAN_SUCCESS);
 is($client->add_server('127.0.0.1', 4730), GEARMAN_SUCCESS);
 is($client->add_servers('127.0.0.1:4730,127.0.0.1'), GEARMAN_SUCCESS);
 
+$client->remove_servers();
+
 # worker
 my $worker = new Gearman::XS::Worker;
 isa_ok($worker, 'Gearman::XS::Worker');
@@ -74,6 +76,8 @@ is($worker->add_server('127.0.0.1'), GEARMAN_SUCCESS);
 is($worker->add_server('localhost', 4730), GEARMAN_SUCCESS);
 is($client->add_servers('localhost:4730,127.0.0.1'), GEARMAN_SUCCESS);
 
+$worker->remove_servers();
+
 $client = new Gearman::XS::Client;
 $client->add_server('127.0.0.1', 61333);
 
@@ -92,4 +96,4 @@ is($job, undef);
 is($ret, GEARMAN_COULD_NOT_CONNECT);
 is(Gearman::XS::strerror($ret), 'COULD_NOT_CONNECT');
 is($job_handle, undef);
-is($client->error(), 'gearman_connection_flush:could not connect');
+is($client->error(), 'COULD_NOT_CONNECT>libgearman/connection.cc:556:');

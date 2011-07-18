@@ -9,9 +9,8 @@ sub new { return bless {}, shift }
 
 sub run_gearmand {
   my ($self) = @_;
-  my $gearmand= `which gearmand`;
-  chomp $gearmand;
-  die "Cannot locate gearmand in $ENV{PATH}"
+  my $gearmand = find_gearmand();
+  die "Cannot locate gearmand executable"
     if !$gearmand;
   if ($self->{gearmand_pid}= fork)  {
     warn("test_server PID is " . $self->{gearmand_pid});
@@ -53,6 +52,28 @@ sub DESTROY {
     system 'kill', $self->{$proc}
       if $self->{$proc};
   }
+}
+
+sub find_gearmand {
+  my $gearmand= find_gearmand_in_path();
+  $gearmand ||= find_gearmand_with_pkg_config();
+  return $gearmand
+}
+
+sub find_gearmand_in_path {
+  my $gearmand= `which gearmand`;
+  chomp $gearmand;
+  return $gearmand;
+}
+
+sub find_gearmand_with_pkg_config {
+  my $pkg_config = `which pkg-config`;
+  return
+    if !$pkg_config;
+  my $exec_prefix= `$pkg_config --variable=exec_prefix gearmand`;
+  chomp $exec_prefix;
+  return "$exec_prefix/sbin/gearmand"
+    if $exec_prefix
 }
 
 1;

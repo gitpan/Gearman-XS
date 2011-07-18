@@ -52,7 +52,7 @@ sub log_callback {
 
   like($verbose, qr/\d/);
 
-  if ($line =~ /.*wait:timeout reached$/)
+  if ($line =~ /.*:timeout reached$/)
   {
     $timeout++;
   }

@@ -1,3 +1,7 @@
+0.12 - 2011-07-18
+ * add add client/worker function remove_servers()
+ * fix test suite failures with latest gearmand versions
+
 0.11 - 2010-08-18
  * remove build warnings with newer Module::Install versions
  * replace savesvpv() with custom function to not pass around trailling NULL

@@ -148,6 +148,12 @@ add_servers(self, servers)
   OUTPUT:
     RETVAL
 
+void
+remove_servers(self)
+    gearman_xs_worker *self
+  CODE:
+    gearman_worker_remove_servers(self);
+
 gearman_return_t
 echo(self, workload)
     gearman_xs_worker *self
