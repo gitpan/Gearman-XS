@@ -3,13 +3,13 @@ abstract: 'Perl front end for the Gearman C library.'
 author:
   - '-2010 Dennis Schoen'
 build_requires:
-  ExtUtils::MakeMaker: 6.42
+  ExtUtils::MakeMaker: 6.59
   Storable: 0
   Test::More: 0
 configure_requires:
-  ExtUtils::MakeMaker: 0
+  ExtUtils::MakeMaker: 6.59
 dynamic_config: 0
-generated_by: 'ExtUtils::MakeMaker version 6.58, CPAN::Meta::Converter version 2.110930001'
+generated_by: 'Module::Install version 1.06, CPAN::Meta::Converter version 2.112621'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -17,8 +17,11 @@ meta-spec:
 name: Gearman-XS
 no_index:
   directory:
-    - t
+    - examples
     - inc
+    - t
 requires:
   perl: 5.006
+resources:
+  license: http://dev.perl.org/licenses/
 version: 0.12
