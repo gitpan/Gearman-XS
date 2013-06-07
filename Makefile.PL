@@ -21,7 +21,7 @@ name 'Gearman-XS';
 all_from 'lib/Gearman/XS.pm';
 no_index directory => 'examples';
 
-can_cc or die "This module requires a C compiler";
+can_xs or die "This module requires a C compiler";
 
 makemaker_args(
     INC     => $INCLUDES,
@@ -30,6 +30,9 @@ makemaker_args(
     clean   => {
         FILES => q{
             MANIFEST
+            inc
+            META.yml
+            Makefile.old
         },
     },
 );

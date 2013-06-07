@@ -1,5 +1,4 @@
-#ifndef __GEARMAN_XS_H__
-#define __GEARMAN_XS_H__
+#pragma once
 
 #include "EXTERN.h"
 #include "perl.h"
@@ -8,7 +7,7 @@
 #define NEED_sv_2pv_flags
 #include "ppport.h"
 
-#include <libgearman/gearman.h>
+#include <libgearman-1.0/gearman.h>
 
 #define XS_STATE(type, x) (INT2PTR(type, SvROK(x) ? SvIV(SvRV(x)) : SvIV(x)))
 
@@ -18,5 +17,3 @@ SV *_bless(const char *class, void *obj);
 void _perl_free(void *ptr, void *arg);
 void *_perl_malloc(size_t size, void *arg);
 void *_get_string(SV *sv, size_t *size);
-
-#endif /* __GEARMAN_XS_H__ */

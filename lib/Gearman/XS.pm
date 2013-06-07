@@ -160,7 +160,7 @@ our @EXPORT_OK = @constants;
 
 our @ISA;
 BEGIN {
-  our $VERSION= '0.13';
+  our $VERSION= '0.14';
 
   eval {
     require XSLoader;
@@ -202,6 +202,7 @@ Any in libgearman plus many others of my own.
 
 =head1 COPYRIGHT
 
+Copyright (C) 2013 Data Differential, ala Brian Aker, http://datadifferential.com/
 Copyright (C) 2009-2010 Dennis Schoen
 
 This library is free software; you can redistribute it and/or modify
@@ -219,6 +220,6 @@ it under the same terms as Perl itself.
 
 =head1 AUTHOR
 
-Dennis Schoen <dennis@blogma.de>
+Brian Aker <brian@tangent.org>
 
 =cut

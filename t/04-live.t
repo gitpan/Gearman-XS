@@ -19,7 +19,7 @@ if ( not $ENV{GEARMAN_LIVE_TEST} ) {
   plan( skip_all => 'Set $ENV{GEARMAN_LIVE_TEST} to run this test' );
 }
 
-plan tests => 158;
+plan tests => 156;
 
 my ($ret, $result, $job_handle, $task);
 
@@ -112,6 +112,14 @@ like($job_handle, qr/H:.+:.+/);
 is($ret, GEARMAN_SUCCESS);
 like($job_handle, qr/H:.+:.+/);
 
+# callback functions
+$client->set_created_fn(\&created_cb);
+$client->set_data_fn(\&data_cb);
+$client->set_complete_fn(\&completed_cb);
+$client->set_fail_fn(\&fail_cb);
+$client->set_status_fn(\&status_cb);
+$client->set_warning_fn(\&warning_cb);
+
 # concurrent interface
 ($ret, $task) = $client->add_task("reverse", 'normal');
 is($ret, GEARMAN_SUCCESS);
@@ -160,14 +168,6 @@ like($task->unique(), qr/\w+-\w+-\w+-\w+-\w+/);
 is($ret, GEARMAN_SUCCESS);
 isa_ok($task, 'Gearman::XS::Task');
 
-# callback functions
-$client->set_created_fn(\&created_cb);
-$client->set_data_fn(\&data_cb);
-$client->set_complete_fn(\&completed_cb);
-$client->set_fail_fn(\&fail_cb);
-$client->set_status_fn(\&status_cb);
-$client->set_warning_fn(\&warning_cb);
-
 # run concurrent tasks
 is($client->run_tasks(), GEARMAN_SUCCESS);
 
@@ -198,9 +198,6 @@ is($result, undef);
 is($ret, GEARMAN_SUCCESS);
 is($result, 'blubb');
 
-($ret, $result) = $client->do('warning', 'blubb');
-is($ret, GEARMAN_WORK_WARNING);
-is($result, 'argh');
 ($ret, $result) = $client->do('warning', 'blubb');
 is($ret, GEARMAN_SUCCESS);
 is($result, 'blubb');
@@ -243,11 +240,12 @@ $client->add_server('127.0.0.1', 4731);
 $client->add_options(GEARMAN_CLIENT_NON_BLOCKING);
 
 $tasks= 2;
-$client->add_task("reverse", 'hello');
-$client->add_task("reverse", 'world');
 
 $client->set_created_fn(\&created_cb);
 $client->set_complete_fn(\&completed_cb);
+
+$client->add_task("reverse", 'hello');
+$client->add_task("reverse", 'world');
 
 # This while loop should be replaced with $client->send_tasks();
 while (1)

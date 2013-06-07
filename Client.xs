@@ -53,11 +53,13 @@ static gearman_return_t _perl_task_callback(SV * fn, gearman_task_st *task)
 
   count= call_sv(fn, G_SCALAR);
   if (count != 1)
+  {
     croak("Invalid number of return values.\n");
+  }
 
   SPAGAIN;
 
-  ret= POPi;
+  ret= (gearman_return_t)POPi;
 
   PUTBACK;
   FREETMPS;

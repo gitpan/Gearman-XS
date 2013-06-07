@@ -9,6 +9,7 @@ sub new { return bless {}, shift }
 
 sub run_gearmand {
   my ($self) = @_;
+  unlink '/tmp/gearmand-xs.log';
   my $gearmand = find_gearmand();
   die "Cannot locate gearmand executable"
     if !$gearmand;
@@ -19,7 +20,7 @@ sub run_gearmand {
     die "cannot fork: $!"
       if (!defined $self->{gearmand_pid});
     $|++;
-    my @cmd= ($gearmand, '-p', 4731);
+    my @cmd= ($gearmand, '-p', 4731, '--log-file=/tmp/gearmand-xs.log', '--verbose=DEBUG', '--pid-file=/tmp/gearmand-xs.pid');
     exec(@cmd)
       or die("Could not exec $gearmand");
     exit;

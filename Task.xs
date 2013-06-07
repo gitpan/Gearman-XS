@@ -35,7 +35,7 @@ int
 data_size(self)
     gearman_xs_task *self
   CODE:
-    RETVAL= gearman_task_data_size(self);
+    RETVAL= (int)gearman_task_data_size(self);
   OUTPUT:
     RETVAL
 

@@ -1,10 +1,10 @@
 {
    "abstract" : "Perl front end for the Gearman C library.",
    "author" : [
-      "-2010 Dennis Schoen"
+      "Data Differential, ala Brian Aker, http://datadifferential.com/"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Module::Install version 1.06, CPAN::Meta::Converter version 2.112621",
+   "generated_by" : "Module::Install version 1.06, CPAN::Meta::Converter version 2.120921",
    "license" : [
       "perl_5"
    ],
@@ -23,13 +23,15 @@
    "prereqs" : {
       "build" : {
          "requires" : {
+            "ExtUtils::CBuilder" : "0.27",
             "ExtUtils::MakeMaker" : "6.59",
-            "Storable" : 0,
-            "Test::More" : 0
+            "Storable" : "0",
+            "Test::More" : "0"
          }
       },
       "configure" : {
          "requires" : {
+            "ExtUtils::CBuilder" : "0.27",
             "ExtUtils::MakeMaker" : "6.59"
          }
       },
@@ -45,5 +47,5 @@
          "http://dev.perl.org/licenses/"
       ]
    },
-   "version" : "0.12"
+   "version" : "0.14"
 }
