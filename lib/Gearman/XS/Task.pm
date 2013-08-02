@@ -1,4 +1,5 @@
 # Gearman Perl front end
+# Copyright (C) 2013 Data Differential, http://datadifferential.com/
 # Copyright (C) 2009-2010 Dennis Schoen
 # All rights reserved.
 #
@@ -11,7 +12,7 @@ package Gearman::XS::Task;
 use strict;
 use warnings;
 
-our $VERSION= '0.12';
+our $VERSION= '0.15';
 
 use Gearman::XS;
 

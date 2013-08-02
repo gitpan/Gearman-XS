@@ -1,4 +1,5 @@
 /* Gearman Perl front end
+ * Copyright (C) 2013 Data Differential, http://datadifferential.com/
  * Copyright (C) 2009-2010 Dennis Schoen
  * All rights reserved.
  *
@@ -42,7 +43,7 @@ void *_perl_malloc(size_t size, void *arg)
 void *_get_string(SV *sv, size_t *size)
 {
   void *string= NULL;
-  SvPV_nolen(sv); // this is necessary for SvCUR to get the stringified length
+  SvPV_nolen(sv); /* this is necessary for SvCUR to get the stringified length */
   *size= SvCUR(sv);
   Newxz(string, *size, char);
   memcpy(string, SvPV_nolen(sv), *size);

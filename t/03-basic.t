@@ -1,4 +1,5 @@
 # Gearman Perl front end
+# Copyright (C) 2013 Data Differential, http://datadifferential.com/
 # Copyright (C) 2009-2010 Dennis Schoen
 # All rights reserved.
 #

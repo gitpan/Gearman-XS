@@ -1,4 +1,5 @@
 /* Gearman Perl front end
+ * Copyright (C) 2013 Data Differential, http://datadifferential.com/
  * Copyright (C) 2009-2010 Dennis Schoen
  * All rights reserved.
  *
@@ -7,6 +8,7 @@
  * at your option, any later version of Perl 5 you may have available.
  */
 
+#define NEED_sv_2pv_flags_GLOBAL
 #include "gearman_xs.h"
 
 typedef struct gearman_xs_client {

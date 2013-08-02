@@ -1,3 +1,12 @@
+# Gearman Perl front end
+# Copyright (C) 2013 Data Differential, http://datadifferential.com/
+# Copyright (C) 2009-2010 Dennis Schoen
+# All rights reserved.
+#
+# This library is free software; you can redistribute it and/or modify
+# it under the same terms as Perl itself, either Perl version 5.8.9 or,
+# at your option, any later version of Perl 5 you may have available.
+
 package    # hide from PAUSE
   TestLib;
 
@@ -69,6 +78,7 @@ sub find_gearmand_in_path {
 
 sub find_gearmand_with_pkg_config {
   my $pkg_config = `which pkg-config`;
+  chomp $pkg_config;
   return
     if !$pkg_config;
   my $exec_prefix= `$pkg_config --variable=exec_prefix gearmand`;

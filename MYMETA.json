@@ -4,7 +4,7 @@
       "Data Differential, ala Brian Aker, http://datadifferential.com/"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Module::Install version 1.06, CPAN::Meta::Converter version 2.120921",
+   "generated_by" : "ExtUtils::MakeMaker version 6.66, CPAN::Meta::Converter version 2.120921",
    "license" : [
       "perl_5"
    ],
@@ -15,9 +15,8 @@
    "name" : "Gearman-XS",
    "no_index" : {
       "directory" : [
-         "examples",
-         "inc",
-         "t"
+         "t",
+         "inc"
       ]
    },
    "prereqs" : {
@@ -31,8 +30,7 @@
       },
       "configure" : {
          "requires" : {
-            "ExtUtils::CBuilder" : "0.27",
-            "ExtUtils::MakeMaker" : "6.59"
+            "ExtUtils::MakeMaker" : "0"
          }
       },
       "runtime" : {
@@ -42,10 +40,5 @@
       }
    },
    "release_status" : "stable",
-   "resources" : {
-      "license" : [
-         "http://dev.perl.org/licenses/"
-      ]
-   },
-   "version" : "0.14"
+   "version" : "0.15"
 }

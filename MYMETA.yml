@@ -8,10 +8,9 @@ build_requires:
   Storable: 0
   Test::More: 0
 configure_requires:
-  ExtUtils::CBuilder: 0.27
-  ExtUtils::MakeMaker: 6.59
+  ExtUtils::MakeMaker: 0
 dynamic_config: 0
-generated_by: 'Module::Install version 1.06, CPAN::Meta::Converter version 2.120921'
+generated_by: 'ExtUtils::MakeMaker version 6.66, CPAN::Meta::Converter version 2.120921'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -19,11 +18,8 @@ meta-spec:
 name: Gearman-XS
 no_index:
   directory:
-    - examples
-    - inc
     - t
+    - inc
 requires:
   perl: 5.006
-resources:
-  license: http://dev.perl.org/licenses/
-version: 0.14
+version: 0.15
